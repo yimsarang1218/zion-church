@@ -203,9 +203,10 @@ export const CommunitySections: React.FC<CommunitySectionsProps> = ({ onOpenBull
 
             <div className="max-w-3xl">
               <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                대한예수교장로회(합동) 하남 시온성교회는 하남시 서하남로 278-30(광암동, <strong>{CHURCH_INFO.trafficInfo}</strong>)에 위치하여,
-                오직 성경 말씀 위에 굳게 서서 날마다 십자가의 복음으로 영혼이 살아나고 주께 하듯 기쁨으로 함께 걷는 행복한 공동체입니다.
-              </p>
+  대한예수교장로회(합동) 하남 시온성교회는 오직 기록된 말씀 위에 서서, 날마다 십자가의 복음으로 영혼이 살아나고 주께 하듯 기쁨으로 함께 걷는 믿음의 공동체입니다.
+  <br className="hidden sm:inline" />
+  교회는 하남시 광암동(서하남로 278-30, <strong>{CHURCH_INFO.trafficInfo}</strong>)에 위치하고 있습니다.
+</p>
 
               {/* 섬기는 이들 (원로장로, 명예장로, 은퇴장로, 시무장로) */}
               <div className="bg-[#F9FAFB] p-5 rounded-lg border border-[#E5E7EB] mb-6 text-xs text-slate-700 space-y-2.5">
