@@ -38,12 +38,12 @@ export const MainQuickGrid: React.FC<MainQuickGridProps> = ({ onOpenBulletin, on
           </a>
         </div>
 
-        {/* Tile 2: Meditation */}
+        {/* Tile 2: QUIET TIME */}
         <div className="bg-white rounded-xl p-6 border border-[#E5E7EB] shadow-[0_10px_30px_rgba(0,0,0,0.06)] hover:-translate-y-1 hover:shadow-[0_16px_32px_rgba(0,0,0,0.1)] transition-all duration-200 flex flex-col justify-between group">
           <div>
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold text-[#C49A45] tracking-wider uppercase">
-                02. MEDITATION
+                02. QUIET TIME
               </span>
               <BookOpen className="w-5 h-5 text-[#C49A45]" />
             </div>
