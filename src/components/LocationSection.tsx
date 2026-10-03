@@ -202,7 +202,7 @@ export const LocationSection: React.FC = () => {
             <ul className="text-xs sm:text-sm text-slate-600 space-y-2.5 list-disc pl-4 leading-relaxed">
               <li><strong>서하남IC 진출:</strong> 수도권제1순환고속도로 서하남IC에서 광암동 방면 약 3분 소요</li>
               <li><strong>송파·강동 방면:</strong> 올림픽선수촌사거리에서 서하남로를 따라 광암동 방향 직진</li>
-              <li><strong>주차장 완비:</strong> 교회 전용 지상 주차장 무료 이용 가능</li>
+              <li><strong>주차장 완비:</strong> 교회 주차 봉사팀 안내에 따라서 주차하실 수 있습니다.</li>
               <li className="text-[#1A365D] font-semibold">자가용 외에도 개롱, 거여, 마천은 교회 셔틀버스가 운영하고 있습니다.</li>
             </ul>
           </div>
