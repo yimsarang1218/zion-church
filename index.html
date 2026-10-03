@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>대한예수교장로회 하남 시온성교회</title>
     <meta name="naver-site-verification" content="4da31a3f4488d79f2c0e52f2c5d264840a90d0de" />
-    <meta name="google-site-verification" content="6nPicdTXPXOhZJNPCW-XhTj28PmQqQY3r4_BSjT4kg0" />
+    <meta name="google-site-verification" content="6nPicdTXPXOhZJNPCW-XHtj28PmQqQY3r4_BSjT4kg0" />
     <meta name="description" content="말씀이 들리고 영혼이 살아나는 공동체, 하남 시온성교회입니다." />
     <meta property="og:title" content="대한예수교장로회 하남 시온성교회" />
     <meta property="og:description" content="말씀이 들리고 영혼이 살아나는 공동체, 하남 시온성교회입니다." />
@@ -13,10 +13,57 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+
+    <!-- 모바일 전용 여백 및 글자 줄바꿈 최적화 -->
+    <style>
+      @media (max-width: 640px) {
+        /* 단어 중간 어색한 줄바꿈 방지 */
+        body, p, span, h1, h2, h3, h4, td, th {
+          word-break: keep-all;
+          overflow-wrap: break-word;
+        }
+
+        /* 1. 상단 말씀 및 메인 타이틀 정돈 */
+        .hero-verse, [class*="max-w"] p {
+          padding-left: 1rem;
+          padding-right: 1rem;
+        }
+
+        /* 2. 예배 시간표 모바일 최적화 */
+        table {
+          font-size: 0.85rem;
+        }
+        th, td {
+          padding: 8px 6px !important;
+        }
+
+        /* 3. 섹션 타이틀 줄바꿈 방지 */
+        h2, h3 {
+          letter-spacing: -0.5px;
+        }
+
+        /* 4. 주보 모달 박스 튀어나옴 방지 */
+        .modal-content, [role="dialog"], [class*="fixed"] > div {
+          max-width: 92vw !important;
+          box-sizing: border-box !important;
+        }
+
+        /* 5. 우측 하단 플로팅 버튼 위치 정리 (하단 겹침 완화) */
+        .fixed.bottom-6.right-6,
+        [class*="bottom-4"][class*="right-4"] {
+          bottom: 4.5rem !important;
+        }
+
+        /* 푸터 줄간격 및 여백 */
+        footer {
+          padding-bottom: 5rem !important;
+          line-height: 1.6;
+        }
+      }
+    </style>
   </head>
   <body class="font-sans antialiased text-slate-800 bg-[#F8F9FA] selection:bg-[#1E3A5F] selection:text-white">
     <div id="root"></div>
     <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>
-
