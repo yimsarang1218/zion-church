@@ -16,7 +16,7 @@ export const CommunitySections: React.FC<CommunitySectionsProps> = ({ onOpenBull
           <div className="flex justify-between items-end border-b-2 border-[#1F2937] pb-3 mb-8">
             <div>
               <span className="text-xs font-bold text-[#C49A45] tracking-wider uppercase block mb-1">
-                Daily Meditation
+                QUIET TIME
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1F2937]">
                 02 날마다 큐티
@@ -109,7 +109,7 @@ export const CommunitySections: React.FC<CommunitySectionsProps> = ({ onOpenBull
             <div>
               <div className="border-b-2 border-[#1F2937] pb-3 mb-6">
                 <span className="text-xs font-bold text-[#C49A45] tracking-wider uppercase block mb-1">
-                  Small Group Community
+                  COMMUNITY & DISCIPLESHIP
                 </span>
                 <h3 className="text-xl sm:text-2xl font-extrabold text-[#1F2937]">
                   03 공동체와 양육 (목장)
