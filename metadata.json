@@ -1,0 +1,6 @@
+{
+  "name": "대한예수교장로회 하남 시온성교회",
+  "description": "말씀의 은혜와 기쁨이 샘솟는 믿음의 든든한 방주, 하남 시온성교회 공식 웹사이트입니다.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
