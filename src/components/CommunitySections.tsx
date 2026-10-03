@@ -11,7 +11,7 @@ export const CommunitySections: React.FC<CommunitySectionsProps> = ({ onOpenBull
   return (
     <div className="bg-[#F9FAFB] py-16 sm:py-20 border-y border-[#E5E7EB]">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 space-y-20">
-        {/* 02. 날마다 큐티 (QT & Meditation) */}
+        {/* 02. 날마다 큐티 (QUIET TIME) */}
         <section id="qt">
           <div className="flex justify-between items-end border-b-2 border-[#1F2937] pb-3 mb-8">
             <div>
