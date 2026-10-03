@@ -20,7 +20,7 @@ export const PortalFooter: React.FC = () => {
               rel="noopener noreferrer"
               className="text-red-400 hover:text-red-300 transition-colors"
             >
-              공식 유튜브 (@zionchurch_s2)
+              공식 유튜브 (@zionchurch-kr)
             </a>
           </li>
         </ul>
