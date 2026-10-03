@@ -166,7 +166,7 @@ export const LocationAndOffering: React.FC = () => {
             <span>서하남IC 3분 거리 / 주차 안내</span>
           </div>
           <p className="leading-relaxed">
-            서하남IC에서 차량 3분 거리이며, 교회 전용 무료 주차 공간이 완비되어 편리하게 이용하실 수 있습니다.
+            서하남IC에서 차량 3분 거리이며, 교회 주차 봉사팀 안내에 따라서 주차하실 수 있습니다.
           </p>
         </div>
 
