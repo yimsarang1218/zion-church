@@ -149,7 +149,7 @@ export const OfferingSection: React.FC = () => {
           <ul className="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
             <li>교적부에 등록된 본인 또는 기본공제 대상 가족 명의로만 합산 발급 가능합니다.</li>
             <li>매년 12월 중순부터 교회 행정실 또는 온라인 신청을 통해 즉시 발급받으실 수 있습니다.</li>
-            <li>문의: 교회 사무국 (02-488-8291)</li>
+            <li>문의: 교회 사무국 (02-408-1191)</li>
           </ul>
         </div>
       </div>
