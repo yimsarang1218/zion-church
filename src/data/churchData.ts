@@ -47,7 +47,7 @@ export const CHURCH_INFO: ChurchInfo = {
   themeVerse: '너희는 택하신 족속이요 왕 같은 제사장들이요 거룩한 나라요 그의 소유가 된 백성이니 (벧전 2:9)',
   address: '경기도 하남시 서하남로 278-30',
   addressDetail: '(광암동)',
-  trafficInfo: '서하남IC 3분 거리 / 교회 전용 주차장 완비',
+  trafficInfo: '서하남IC 3분 거리',
   phone: '010-2741-2938',
   counselingPhone: '010-2741-2938',
   shuttlePhone: '010-4707-5395',
@@ -60,10 +60,10 @@ export const CHURCH_INFO: ChurchInfo = {
   youtubeHandle: '@zionchurch_s2',
   meditationBlogUrl: 'https://blog.naver.com/yimsa_rang',
   meditationBlogNote: '매일 묵상글이 올라오는 블로그 (월-금)',
-  featuredSermonVideoId: '1azfrCPgb84',
-  featuredSermonTitle: '재를 치우고 불을 살려라',
-  featuredSermonScripture: '레위기 6장 8-13절',
-  featuredSermonUrl: 'https://youtu.be/1azfrCPgb84',
+  featuredSermonVideoId: 'AhlUN_aItKE',
+  featuredSermonTitle: '도무지 이해가 안된다고요?',
+  featuredSermonScripture: '로마서 9장 7-13절',
+  featuredSermonUrl: 'https://youtu.be/AhlUN_aItKE',
 };
 
 export const WORSHIP_SCHEDULES: {
