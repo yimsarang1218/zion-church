@@ -15,22 +15,10 @@ export const Hero: React.FC<HeroProps> = () => {
   background: 'linear-gradient(rgba(15, 23, 42, 0.2), rgba(15, 23, 42, 0.2)), url("/hero-2026.png") center/cover no-repeat',
 }}
     >
-      {/* Central Content */}
-      <div className="max-w-[900px] mx-auto -mt-12 sm:-mt-16 z-10">
-        <div className="text-xs sm:text-sm tracking-[2px] text-[#C5A059] font-bold uppercase mb-4 sm:mb-5">
-          Hanam Zion Church
-        </div>
-
-        <h1 className="text-3xl sm:text-5xl lg:text-[3.5rem] font-extrabold leading-[1.3] mb-5 sm:mb-6 text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-          말씀으로 회복되고
-          <br />
-          은혜로 세워지는 공동체
-        </h1>
-
-        <p className="text-base sm:text-xl text-white/90 font-light max-w-[680px] mx-auto mb-8 sm:mb-12 leading-[1.8]">
-          십자가의 크신 사랑과 은혜 안에서 참된 안식을 누리고,
-          <br className="hidden sm:inline" />
-          하나님 나라의 빛과 소금으로 세상 속에서 승리하는 하남 시온성교회입니다.
+           {/* Central Content */}
+      <div className="max-w-[900px] mx-auto mt-24 sm:mt-36">
+        <p className="text-base sm:text-xl text-white/95 font-medium max-w-[680px] mx-auto leading-relaxed drop-shadow-md [word-break:keep-all]">
+          말씀이 들리고 영혼이 살아나는 공동체, 하남 시온성교회에 오신 것을 진심으로 환영합니다.
         </p>
       </div>
 
