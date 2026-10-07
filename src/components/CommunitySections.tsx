@@ -57,7 +57,7 @@ export const CommunitySections: React.FC<CommunitySectionsProps> = ({ onOpenBull
               </div>
             </div>
 
-            {/* 오늘의 묵상 블로그 연동 (https://blog.naver.com/yimsa_rang) */}
+            {/* 오늘의 묵상 블로그 연동 */}
             <div className="bg-white p-7 rounded-xl border-2 border-[#03C75A]/30 shadow-xs flex flex-col justify-between relative group hover:border-[#03C75A] transition-all">
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -142,7 +142,7 @@ export const CommunitySections: React.FC<CommunitySectionsProps> = ({ onOpenBull
               </div>
             </div>
 
-            {/* Right: 새가족 등록 및 정착 */}
+            {/* Right: 새가족 안내 */}
             <div id="newcomers">
               <div className="border-b-2 border-[#1F2937] pb-3 mb-6">
                 <span className="text-xs font-bold text-[#C49A45] tracking-wider uppercase block mb-1">
@@ -179,7 +179,7 @@ export const CommunitySections: React.FC<CommunitySectionsProps> = ({ onOpenBull
           </div>
         </section>
 
-        {/* 06. 교회소개 (원로장로, 명예장로, 은퇴장로, 시무장로 순서) */}
+        {/* 06. 교회소개 & 2026 표어 (중앙 정렬 및 너비 채우기 반영) */}
         <section id="about">
           <div className="border-b-2 border-[#1F2937] pb-3 mb-8">
             <span className="text-xs font-bold text-[#C49A45] tracking-wider uppercase block mb-1">
@@ -190,67 +190,74 @@ export const CommunitySections: React.FC<CommunitySectionsProps> = ({ onOpenBull
             </h2>
           </div>
 
-          <div className="bg-white p-8 sm:p-10 rounded-xl border border-[#E5E7EB] shadow-xs">
+          <div className="bg-white p-6 sm:p-10 rounded-2xl border border-[#E5E7EB] shadow-xs">
             {/* 2026 Slogan Banner */}
-            <div className="mb-6 p-5 sm:p-6 rounded-xl bg-amber-50/70 border border-amber-200/80">
-              <span className="text-xs font-bold text-[#A27B2B] tracking-wider uppercase block mb-1">
+            <div className="mb-8 p-6 sm:p-7 rounded-xl bg-amber-50/70 border border-amber-200/80 text-center">
+              <span className="text-xs font-bold text-[#A27B2B] tracking-wider uppercase block mb-1.5">
                 2026년 교회 표어
               </span>
-              <h3 className="text-xl sm:text-2xl font-extrabold text-[#1F2937] tracking-tight">
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#1F2937] tracking-tight">
                 “{CHURCH_INFO.slogan2026}”
               </h3>
             </div>
 
-            <div className="max-w-3xl">
-              <p className="text-sm text-slate-600 leading-relaxed mb-6">
-  대한예수교장로회(합동) 하남 시온성교회는 오직 기록된 말씀 위에 서서, 날마다 십자가의 복음으로 영혼이 살아나고 주께 하듯 기쁨으로 함께 걷는 믿음의 공동체입니다.
-  <br className="hidden sm:inline" />
-  교회는 하남시 광암동(서하남로 278-30)에 위치하고 있습니다.
-</p>
+            {/* 소개 본문 (가운데 정렬, 단어 끊김 방지, 편안한 줄바꿈) */}
+            <div className="text-center text-slate-700 text-sm sm:text-base leading-relaxed mb-8 max-w-4xl mx-auto [word-break:keep-all]">
+              <p className="mb-2">
+                대한예수교장로회(합동) 하남 시온성교회는 오직 기록된 말씀 위에 서서,
+                <br className="hidden sm:inline" />
+                날마다 십자가의 복음으로 영혼이 살아나고 주께 하듯 기쁨으로 함께 걷는 믿음의 공동체입니다.
+              </p>
+              <p className="text-slate-500 text-xs sm:text-sm font-medium">
+                교회는 하남시 광암동(서하남로 278-30)에 위치하고 있습니다.
+              </p>
+            </div>
 
-              {/* 섬기는 이들 (원로장로, 명예장로, 은퇴장로, 시무장로) */}
-              <div className="bg-[#F9FAFB] p-5 rounded-lg border border-[#E5E7EB] mb-6 text-xs text-slate-700 space-y-2.5">
-                <div className="flex flex-wrap items-center gap-2">
+            {/* 섬기는 이들 (좌우 균형 잡힌 카드형 그리드) */}
+            <div className="w-full bg-[#F9FAFB] rounded-xl border border-[#E5E7EB] p-5 sm:p-7 mb-8 shadow-2xs">
+              {/* 목회자 라인 (상단 중앙 강조) */}
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 pb-4 border-b border-slate-200 text-sm sm:text-base">
+                <div className="flex items-center gap-2">
                   <span className="font-bold text-[#1F2937]">담임목사:</span>
-                  <span className="text-slate-900 font-semibold">{CHURCH_INFO.seniorPastor}</span>
-                  <span className="text-slate-400 mx-1">|</span>
+                  <span className="font-semibold text-slate-900">{CHURCH_INFO.seniorPastor}</span>
+                </div>
+                <span className="text-slate-300 hidden sm:inline">|</span>
+                <div className="flex items-center gap-2">
                   <span className="font-bold text-[#1F2937]">동사목사:</span>
-                  <span className="text-slate-900 font-semibold">{CHURCH_INFO.associatePastor}</span>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200/80 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <span className="font-bold text-[#1F2937]">원로장로 :</span> <span>임원묵</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-[#1F2937]">명예장로 :</span> <span>진종원</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-[#1F2937]">은퇴장로 :</span> <span>김승연, 강태붕</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-[#1F2937]">시무장로 :</span> <span>이영재, 정호성</span>
-                  </div>
+                  <span className="font-semibold text-slate-900">{CHURCH_INFO.associatePastor}</span>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-4 text-xs pt-4 border-t border-slate-100 text-slate-600">
-                <span className="font-semibold">
-                  전화 상담: {CHURCH_INFO.counselingPhone}
-                </span>
-                <span className="text-slate-400">|</span>
-                <span className="font-semibold">
-                  교회 셔틀: {CHURCH_INFO.shuttlePhone}
-                </span>
-                <span className="text-slate-400">|</span>
-                <span className="font-semibold">
-                  팩스: {CHURCH_INFO.fax}
-                </span>
-                <span className="text-slate-400">|</span>
-                <span className="font-semibold">
-                  이메일: {CHURCH_INFO.email}
-                </span>
+              {/* 장로님 명단 (좌우 대칭 2열 그리드) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-12 pt-4 text-xs sm:text-sm max-w-2xl mx-auto">
+                <div className="flex justify-between sm:justify-start gap-3 border-b sm:border-b-0 border-slate-100 pb-2 sm:pb-0">
+                  <span className="font-bold text-[#1F2937] min-w-[70px]">원로장로 :</span>
+                  <span className="text-slate-700">임원묵</span>
+                </div>
+                <div className="flex justify-between sm:justify-start gap-3 border-b sm:border-b-0 border-slate-100 pb-2 sm:pb-0">
+                  <span className="font-bold text-[#1F2937] min-w-[70px]">명예장로 :</span>
+                  <span className="text-slate-700">진종원</span>
+                </div>
+                <div className="flex justify-between sm:justify-start gap-3 border-b sm:border-b-0 border-slate-100 pb-2 sm:pb-0">
+                  <span className="font-bold text-[#1F2937] min-w-[70px]">은퇴장로 :</span>
+                  <span className="text-slate-700">김승연, 강태붕</span>
+                </div>
+                <div className="flex justify-between sm:justify-start gap-3">
+                  <span className="font-bold text-[#1F2937] min-w-[70px]">시무장로 :</span>
+                  <span className="text-slate-700">이영재, 정호성</span>
+                </div>
               </div>
+            </div>
+
+            {/* 하단 연락처 바 (가운데 정렬) */}
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-slate-600 pt-5 border-t border-slate-100">
+              <span className="font-medium">전화 상담: {CHURCH_INFO.counselingPhone}</span>
+              <span className="text-slate-300 hidden sm:inline">|</span>
+              <span className="font-medium">교회 셔틀: {CHURCH_INFO.shuttlePhone}</span>
+              <span className="text-slate-300 hidden sm:inline">|</span>
+              <span className="font-medium">팩스: {CHURCH_INFO.fax}</span>
+              <span className="text-slate-300 hidden sm:inline">|</span>
+              <span className="font-medium">이메일: {CHURCH_INFO.email}</span>
             </div>
           </div>
         </section>
