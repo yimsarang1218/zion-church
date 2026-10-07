@@ -1,5 +1,5 @@
 import React from 'react';
-import { Radio, Youtube, MapPin, CreditCard, FileText, MessageCircle, Phone } from 'lucide-react';
+import { FileText, MapPin, CreditCard, Phone, Heart } from 'lucide-react';
 import { CHURCH_INFO } from '../data/churchData';
 
 interface TopNoticeBarProps {
@@ -9,70 +9,62 @@ interface TopNoticeBarProps {
 
 export const TopNoticeBar: React.FC<TopNoticeBarProps> = ({ onOpenBulletin, onOpenPrayer }) => {
   return (
-    <div className="bg-[#111827] text-[#F3F4F6] text-xs py-2 px-4 sm:px-6 border-b border-white/5">
-      <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
-        {/* Left Notice: Live Broadcast Notice */}
-        <div className="flex items-center gap-2 text-xs flex-wrap justify-center sm:justify-start">
-          <span className="bg-[#E11D48] text-white px-2 py-0.5 rounded font-bold text-[11px] inline-flex items-center gap-1 shadow-xs">
-            <Radio className="w-3 h-3 animate-pulse" />
-            LIVE
-          </span>
-          <span className="text-slate-300">
-            온라인 실시간 생중계: <strong className="text-white font-semibold">주일 1부 I 2부 · 수요행복예배 · 금요예배</strong>
+    <div className="bg-[#111827] text-[#E5E7EB] text-xs py-2 px-4 sm:px-6 border-b border-white/5">
+      <div className="max-w-[1280px] mx-auto flex items-center justify-between gap-3">
+        {/* Left: 모바일에서는 축약, PC에서는 전체 표어 표시 */}
+        <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#C49A45] shrink-0" />
+          <span className="text-slate-300 text-[11px] sm:text-xs">
+            하남 시온성교회
+            <span className="hidden md:inline text-slate-400"> | {CHURCH_INFO.slogan2026}</span>
           </span>
         </div>
 
-        {/* Right Top User Menu */}
-        <ul className="flex items-center gap-4 text-slate-400 text-xs list-none">
-          <li>
-            <a
-              href={CHURCH_INFO.youtubeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-white transition-colors flex items-center gap-1"
-            >
-              <Youtube className="w-3.5 h-3.5 text-red-500 fill-red-500" />
-              <span>유튜브 채널</span>
-            </a>
-          </li>
-          <li>
-            <button
-              onClick={onOpenBulletin}
-              className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
-            >
-              <FileText className="w-3.5 h-3.5 text-[#C49A45]" />
-              <span>금주의 주보</span>
-            </button>
-          </li>
-          <li>
-            <a href="#location" className="hover:text-white transition-colors">
-              오시는 길
-            </a>
-          </li>
-          <li>
-            <a href="#offering" className="hover:text-white transition-colors">
-              온라인 헌금
-            </a>
-          </li>
-          <li>
+        {/* Right: 모바일 터치 최적화 아이콘 링크 */}
+        <div className="flex items-center gap-3 sm:gap-4 shrink-0 text-[11px] sm:text-xs">
+          <button
+            onClick={onOpenBulletin}
+            className="hover:text-[#C49A45] text-slate-200 transition-colors flex items-center gap-1 cursor-pointer font-medium"
+            title="금주의 주보"
+          >
+            <FileText className="w-3.5 h-3.5 text-[#C49A45]" />
+            <span>주보</span>
+          </button>
+          <a
+            href="#location"
+            className="hover:text-[#C49A45] text-slate-300 transition-colors hidden sm:flex items-center gap-1"
+          >
+            <MapPin className="w-3.5 h-3.5 text-slate-400" />
+            <span>오시는길</span>
+          </a>
+          <a
+            href="#offering"
+            className="hover:text-[#C49A45] text-slate-300 transition-colors flex items-center gap-1 font-medium"
+          >
+            <CreditCard className="w-3.5 h-3.5 text-[#C49A45]" />
+            <span>헌금</span>
+          </a>
+          <span className="text-slate-600 hidden sm:inline">|</span>
+          {/* 전화 및 기도요청 */}
+          <div className="flex items-center gap-1.5 text-slate-400">
             <a
               href={`tel:${CHURCH_INFO.counselingPhone}`}
-              className="text-[#C49A45] hover:text-amber-300 font-semibold flex items-center gap-1 transition-colors"
+              className="inline-flex items-center gap-1 hover:text-white text-slate-300 transition-colors"
+              title={`전화상담 (${CHURCH_INFO.counselingPhone})`}
             >
-              <Phone className="w-3.5 h-3.5" />
-              <span>전화 상담 {CHURCH_INFO.counselingPhone}</span>
+              <Phone className="w-3 h-3 text-[#C49A45]" />
+              <span className="hidden md:inline">{CHURCH_INFO.counselingPhone}</span>
             </a>
-          </li>
-          <li>
             <button
               onClick={onOpenPrayer}
-              className="hover:text-[#C49A45] text-slate-300 font-medium transition-colors flex items-center gap-1 cursor-pointer"
+              className="hover:text-[#C49A45] text-slate-300 transition-colors cursor-pointer inline-flex items-center gap-1 ml-1 pl-1.5 border-l border-slate-700"
+              title="기도요청"
             >
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span>상담·기도</span>
+              <Heart className="w-3 h-3 text-rose-400" />
+              <span>기도</span>
             </button>
-          </li>
-        </ul>
+          </div>
+        </div>
       </div>
     </div>
   );
