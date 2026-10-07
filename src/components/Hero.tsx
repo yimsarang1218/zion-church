@@ -12,8 +12,8 @@ export const Hero: React.FC<HeroProps> = () => {
       id="section0"
       className="relative min-h-[700px] h-screen flex items-center justify-center text-center text-white px-4 sm:px-6 overflow-hidden"
       style={{
-        background: `linear-gradient(rgba(15, 23, 42, 0.65), rgba(15, 23, 42, 0.7)), url('https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=1920&q=85') center/cover no-repeat`,
-      }}
+  background: 'linear-gradient(rgba(15, 23, 42, 0.2), rgba(15, 23, 42, 0.2)), url("/hero-2026.png") center/cover no-repeat',
+}}
     >
       {/* Central Content */}
       <div className="max-w-[900px] mx-auto -mt-12 sm:-mt-16 z-10">
