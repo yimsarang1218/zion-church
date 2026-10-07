@@ -4,17 +4,17 @@ import { Radio } from 'lucide-react';
 export const HeroBanner: React.FC = () => {
   return (
     <section
-      className="relative min-h-[520px] sm:min-h-[640px] py-16 flex items-center justify-center text-center text-white px-4 sm:px-6 overflow-hidden bg-[#0F172A]"
+      className="relative min-h-[580px] sm:min-h-[720px] py-16 flex items-center justify-center text-center text-white px-4 sm:px-6 overflow-hidden bg-[#0F172A]"
       style={{
         backgroundImage: "linear-gradient(rgba(15, 23, 42, 0.15), rgba(15, 23, 42, 0.15)), url('/hero-2026.png')",
         backgroundSize: "cover",
-        backgroundPosition: "center",
+        backgroundPosition: "center top",
         backgroundRepeat: "no-repeat",
       }}
     >
       {/* Content */}
-      <div className="relative z-10 max-w-[960px] mx-auto flex flex-col items-center justify-center pt-52 sm:pt-64 pb-6">
-        {/* 문구를 표어 아래쪽으로 충분히 내린 위치 */}
+      <div className="relative z-10 max-w-[960px] mx-auto flex flex-col items-center justify-center pt-56 sm:pt-72 pb-6">
+        {/* 말씀이 들리고 영혼이 살아나는 공동체 문구 */}
         <p className="text-sm sm:text-lg text-white font-medium max-w-[720px] mx-auto mb-6 leading-relaxed [word-break:keep-all] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
           말씀이 들리고 영혼이 살아나는 공동체, 하남 시온성교회에 오신 것을 진심으로 환영합니다.
         </p>
