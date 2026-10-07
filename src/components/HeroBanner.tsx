@@ -22,7 +22,7 @@ export const HeroBanner: React.FC = () => {
         {/* Live Broadcast Notice */}
         <div className="inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full bg-[#E11D48]/90 border border-[#FCE7D4]/50 text-white text-xs sm:text-sm font-semibold backdrop-blur-sm shadow-lg">
           <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white animate-pulse" />
-          <span>실시간 생중계: 주일 1부 12부 · 수요행복예배 · 금요예배</span>
+          <span>실시간 생중계: 주일 1부ㅣ2부 · 수요행복예배 · 금요예배</span>
         </div>
       </div>
     </section>
