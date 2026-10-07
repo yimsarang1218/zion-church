@@ -16,7 +16,9 @@ export const HeroBanner: React.FC = () => {
       <div className="relative z-10 max-w-[960px] mx-auto w-full flex flex-col items-center pb-36 sm:pb-48">
         {/* 환영 문구 */}
         <p className="text-base sm:text-2xl text-white font-bold max-w-[760px] mx-auto mb-4 leading-relaxed [word-break:keep-all] drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
-          말씀이 들리고 영혼이 살아나는 공동체, 하남 시온성교회에 오신 것을 진심으로 환영합니다.
+          말씀이 들리고 영혼이 살아나는 공동체, 
+          <br/>
+          하남 시온성교회에 오신 것을 진심으로 환영합니다.
         </p>
 
         {/* Live Broadcast Notice */}
