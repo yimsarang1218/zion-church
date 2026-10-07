@@ -7,7 +7,7 @@ export const HeroBanner: React.FC = () => {
     <section
       className="relative min-h-[480px] sm:min-h-[520px] py-16 flex items-center justify-center text-center text-white px-4 sm:px-6 overflow-hidden bg-[#FAF8F5]"
       style={{
-        backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.48), rgba(15, 23, 42, 0.58)), url('/changrip.jpg'), url('/창립.jpg')`,
+        backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.25), rgba(15, 23, 42, 0.25)), url('/hero-2026.png')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
