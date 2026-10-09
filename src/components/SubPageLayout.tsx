@@ -255,12 +255,13 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
 
     return posts.filter(p => p.category === cat && p.title.toLowerCase().includes(searchKeyword.toLowerCase()));
   };
-
+// 관리자 인증 처리
   const handleAdminAuth = () => {
-    if (adminPassword.trim() === 'zion1218') {
+    const inputClean = adminPassword.trim().toLowerCase();
+    if (inputClean === 'zion1218') {
       setIsAdminAuthenticated(true);
     } else {
-      alert('비밀번호가 올바르지 않습니다.');
+      alert('비밀번호가 올바르지 않습니다. 다시 입력해 주세요.');
     }
   };
 
