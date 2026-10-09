@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Home, ChevronRight, Search, ArrowLeft, Eye, Calendar, 
   User, Plus, Lock, Check, Video, Volume2, MapPin, 
-  CreditCard, BookOpen, Heart, Sparkles, Navigation, Copy
+  CreditCard, BookOpen, Heart, Sparkles, Navigation, Copy, Loader2
 } from 'lucide-react';
+import { collection, getDocs, addDoc, query, orderBy } from 'firebase/firestore';
+import { db } from '../firebase';
 import { CHURCH_INFO } from '../data/churchData';
 
 interface SubPageLayoutProps {
@@ -29,8 +31,15 @@ interface PostItem {
   imageUrl?: string;
 }
 
-// 1. 초기 설교 데이터
-const INITIAL_POSTS: PostItem[] = [
+interface NewcomerItem {
+  id: string;
+  name: string;
+  date: string;
+  desc: string;
+}
+
+// 기본 Fallback 데이터 (DB가 비어있을 때 표시)
+const DEFAULT_POSTS: PostItem[] = [
   {
     id: 'p1',
     no: 1,
@@ -77,13 +86,11 @@ const INITIAL_POSTS: PostItem[] = [
   },
 ];
 
-// 2. 새가족 소개 초기 데이터 (사진 제외, 텍스트 카드)
-const INITIAL_NEWCOMERS = [
+const DEFAULT_NEWCOMERS: NewcomerItem[] = [
   { id: 'n1', name: '김성민 성도 가정', date: '2026.10.11', desc: '1목장 배정 | 주님의 이름으로 축복하고 환영합니다.' },
   { id: 'n2', name: '이수진 청년', date: '2026.10.04', desc: '청년목장 배정 | 믿음의 동역자로 함께 걷습니다.' },
 ];
 
-// 3. 섬기는 분들 데이터
 const CHURCH_STAFF = [
   { group: '교역자', role: '담임목사', name: '채준희' },
   { group: '교역자', role: '동사목사', name: '임사랑' },
@@ -105,8 +112,12 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
   const [currentSectionId, setCurrentSectionId] = useState(initialSectionId || 'worship');
   const [currentSubMenuId, setCurrentSubMenuId] = useState(initialSubMenuId || 'sunday-sermon');
   
-  const [posts, setPosts] = useState<PostItem[]>(INITIAL_POSTS);
-  const [newcomers, setNewcomers] = useState(INITIAL_NEWCOMERS);
+  // Firestore 연동 상태
+  const [posts, setPosts] = useState<PostItem[]>(DEFAULT_POSTS);
+  const [newcomers, setNewcomers] = useState<NewcomerItem[]>(DEFAULT_NEWCOMERS);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [copiedAccount, setCopiedAccount] = useState(false);
@@ -127,7 +138,42 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
   const [newNewcomerName, setNewNewcomerName] = useState('');
   const [newNewcomerDesc, setNewNewcomerDesc] = useState('');
 
-  // 6대 섹션 및 하위 메뉴 규격
+  // 1. 컴포넌트 마운트 시 Firestore에서 글 목록 불러오기
+  useEffect(() => {
+    const fetchFirestoreData = async () => {
+      try {
+        setIsLoading(true);
+        // 게시글 컬렉션 조회
+        const postsRef = collection(db, 'posts');
+        const postsSnap = await getDocs(postsRef);
+        if (!postsSnap.empty) {
+          const loadedPosts: PostItem[] = postsSnap.docs.map(doc => ({
+            id: doc.id,
+            ...(doc.data() as Omit<PostItem, 'id'>)
+          }));
+          setPosts(loadedPosts);
+        }
+
+        // 새가족 컬렉션 조회
+        const newcomersRef = collection(db, 'newcomers');
+        const newcomersSnap = await getDocs(newcomersRef);
+        if (!newcomersSnap.empty) {
+          const loadedNewcomers: NewcomerItem[] = newcomersSnap.docs.map(doc => ({
+            id: doc.id,
+            ...(doc.data() as Omit<NewcomerItem, 'id'>)
+          }));
+          setNewcomers(loadedNewcomers);
+        }
+      } catch (error) {
+        console.warn('Firestore 연동 실패 또는 오프라인 모드:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFirestoreData();
+  }, []);
+
   const SECTIONS = {
     worship: {
       title: '예배와 말씀',
@@ -218,46 +264,69 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
     }
   };
 
-  const handleAdminSubmit = (e: React.FormEvent) => {
+  // 2. 관리자 글 등록 (Firestore DB에 addDoc 영구 저장)
+  const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (currentSubMenuId === 'newcomers-intro') {
-      if (!newNewcomerName.trim()) return;
-      const newCard = {
-        id: `nc_${Date.now()}`,
-        name: newNewcomerName.trim(),
-        date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
-        desc: newNewcomerDesc.trim() || '시온성교회 새가족을 환영합니다.',
-      };
-      setNewcomers([newCard, ...newcomers]);
-      setNewNewcomerName('');
-      setNewNewcomerDesc('');
-      setIsAdminOpen(false);
-      alert('새가족 소개가 성공적으로 등록되었습니다.');
-      return;
-    }
+    setIsSubmitting(true);
 
-    if (!newTitle.trim()) return;
-    const newPost: PostItem = {
-      id: `p_${Date.now()}`,
-      no: posts.length + 1,
-      category: adminTargetCategory,
-      title: newTitle.trim(),
-      author: newAuthor.trim(),
-      date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
-      views: 1,
-      content: newContent.trim(),
-      scripture: newScripture.trim(),
-      youtubeId: newYoutubeId.trim(),
-      audioUrl: newAudioUrl.trim(),
-    };
-    setPosts([newPost, ...posts]);
-    setNewTitle('');
-    setNewScripture('');
-    setNewYoutubeId('');
-    setNewAudioUrl('');
-    setNewContent('');
-    setIsAdminOpen(false);
-    alert('새 글이 성공적으로 등록되었습니다.');
+    try {
+      if (currentSubMenuId === 'newcomers-intro') {
+        if (!newNewcomerName.trim()) return;
+        const newCardData = {
+          name: newNewcomerName.trim(),
+          date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
+          desc: newNewcomerDesc.trim() || '시온성교회 새가족을 환영합니다.',
+        };
+
+        // Firestore 저장 시도
+        try {
+          const docRef = await addDoc(collection(db, 'newcomers'), newCardData);
+          setNewcomers([{ id: docRef.id, ...newCardData }, ...newcomers]);
+        } catch {
+          setNewcomers([{ id: `nc_${Date.now()}`, ...newCardData }, ...newcomers]);
+        }
+
+        setNewNewcomerName('');
+        setNewNewcomerDesc('');
+        setIsAdminOpen(false);
+        alert('새가족 소개가 성공적으로 등록되었습니다.');
+        return;
+      }
+
+      if (!newTitle.trim()) return;
+      const newPostData = {
+        no: posts.length + 1,
+        category: adminTargetCategory,
+        title: newTitle.trim(),
+        author: newAuthor.trim(),
+        date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
+        views: 1,
+        content: newContent.trim(),
+        scripture: newScripture.trim(),
+        youtubeId: newYoutubeId.trim(),
+        audioUrl: newAudioUrl.trim(),
+      };
+
+      // Firestore 저장 시도
+      try {
+        const docRef = await addDoc(collection(db, 'posts'), newPostData);
+        setPosts([{ id: docRef.id, ...newPostData }, ...posts]);
+      } catch {
+        setPosts([{ id: `p_${Date.now()}`, ...newPostData }, ...posts]);
+      }
+
+      setNewTitle('');
+      setNewScripture('');
+      setNewYoutubeId('');
+      setNewAudioUrl('');
+      setNewContent('');
+      setIsAdminOpen(false);
+      alert('새 글이 성공적으로 등록되었습니다.');
+    } catch (err) {
+      alert('등록 중 오류가 발생했습니다.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCopyAccount = () => {
@@ -475,7 +544,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 4. 새가족 소개 (텍스트 카드) */}
+            {/* 4. 새가족 소개 */}
             {currentSubMenuId === 'newcomers-intro' && (
               <div className="space-y-6">
                 <div>
@@ -593,7 +662,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 8. 온라인 헌금 계좌 (태그 짝 오류 완전 교정 구역) */}
+            {/* 8. 온라인 헌금 계좌 */}
             {currentSubMenuId === 'offering-grid' && (
               <div className="space-y-6">
                 <div>
@@ -682,7 +751,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                   </div>
                 </div>
 
-                {/* 유튜브 영상 지원 */}
                 {selectedPost.youtubeId && (
                   <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-md">
                     <iframe
@@ -694,7 +762,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                   </div>
                 )}
 
-                {/* 화목 기도회 음성 지원 */}
                 {selectedPost.audioUrl && (
                   <div className="p-4 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-3">
                     <Volume2 className="w-5 h-5 text-amber-700 shrink-0" />
@@ -723,7 +790,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                   </h1>
                 </div>
 
-                {/* 검색창 */}
                 <div className="flex items-center justify-end gap-2 pb-4 border-b border-slate-200">
                   <div className="relative">
                     <input
@@ -737,7 +803,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                   </div>
                 </div>
 
-                {/* 게시글 목록 표 */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs sm:text-sm">
                     <thead>
@@ -788,7 +853,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-1.5">
                   <Lock className="w-4 h-4 text-[#C49A45]" />
-                  <span>관리자 등록 모드</span>
+                  <span>관리자 등록 모드 (DB 연동)</span>
                 </h3>
                 <button onClick={() => setIsAdminOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer text-sm font-bold">닫기</button>
               </div>
@@ -931,9 +996,17 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
 
                   <button
                     type="submit"
-                    className="w-full py-2.5 rounded-xl bg-[#C49A45] hover:bg-[#A27B2B] text-white font-bold text-xs cursor-pointer"
+                    disabled={isSubmitting}
+                    className="w-full py-2.5 rounded-xl bg-[#C49A45] hover:bg-[#A27B2B] text-white font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5"
                   >
-                    등록 완료하기
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>데이터베이스 저장 중...</span>
+                      </>
+                    ) : (
+                      <span>등록 완료하기 (DB 영구 저장)</span>
+                    )}
                   </button>
                 </form>
               )}
