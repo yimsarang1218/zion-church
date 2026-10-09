@@ -29,7 +29,7 @@ interface PostItem {
   imageUrl?: string;
 }
 
-// 1. 초기 게시글 데이터
+// 1. 초기 설교 데이터
 const INITIAL_POSTS: PostItem[] = [
   {
     id: 'p1',
@@ -77,22 +77,22 @@ const INITIAL_POSTS: PostItem[] = [
   },
 ];
 
-// 새가족 소개 초기 데이터
+// 2. 새가족 소개 초기 데이터 (사진 없이 텍스트 카드)
 const INITIAL_NEWCOMERS = [
-  { id: 'n1', name: '김성민 성도 가정', date: '2026.10.11', desc: '1목장 배정 | 주님의 이름으로 축복하고 환영합니다.', imageUrl: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=400&q=80' },
-  { id: 'n2', name: '이수진 청년', date: '2026.10.04', desc: '청년목장 배정 | 믿음의 동역자로 함께 걷습니다.', imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80' },
+  { id: 'n1', name: '김성민 성도 가정', date: '2026.10.11', desc: '1목장 배정 | 주님의 이름으로 축복하고 환영합니다.' },
+  { id: 'n2', name: '이수진 청년', date: '2026.10.04', desc: '청년목장 배정 | 믿음의 동역자로 함께 걷습니다.' },
 ];
 
-// 섬기는 분들 데이터
+// 3. 섬기는 분들 데이터 (불필요한 직무 설명 삭제)
 const CHURCH_STAFF = [
-  { group: '교역자', role: '담임목사', name: '채준희', desc: '시온성교회 담임목회 총괄' },
-  { group: '교역자', role: '동사목사', name: '임사랑', desc: '구속사 큐티 및 청년·양육 담당' },
-  { group: '원로·명예·은퇴장로', role: '원로장로', name: '임원묵', desc: '시온성교회 원로장로' },
-  { group: '원로·명예·은퇴장로', role: '명예장로', name: '진종원', desc: '시온성교회 명예장로' },
-  { group: '원로·명예·은퇴장로', role: '은퇴장로', name: '김승연', desc: '시온성교회 은퇴장로' },
-  { group: '원로·명예·은퇴장로', role: '은퇴장로', name: '강태봉', desc: '시온성교회 은퇴장로' },
-  { group: '시무장로', role: '시무장로', name: '이영재', desc: '당회 및 재정·행정 사역' },
-  { group: '시무장로', role: '시무장로', name: '정호성', desc: '당회 및 예배·관리 사역' },
+  { group: '교역자', role: '담임목사', name: '채준희' },
+  { group: '교역자', role: '동사목사', name: '임사랑' },
+  { group: '원로·명예·은퇴장로', role: '원로장로', name: '임원묵' },
+  { group: '원로·명예·은퇴장로', role: '명예장로', name: '진종원' },
+  { group: '원로·명예·은퇴장로', role: '은퇴장로', name: '김승연' },
+  { group: '원로·명예·은퇴장로', role: '은퇴장로', name: '강태봉' },
+  { group: '시무장로', role: '시무장로', name: '이영재' },
+  { group: '시무장로', role: '시무장로', name: '정호성' },
 ];
 
 export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
@@ -116,7 +116,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
   const [adminPassword, setAdminPassword] = useState('');
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   
-  // 관리자 입력 폼
+  // 관리자 폼 상태
   const [adminTargetCategory, setAdminTargetCategory] = useState('sunday');
   const [newTitle, setNewTitle] = useState('');
   const [newAuthor, setNewAuthor] = useState('관리자');
@@ -126,7 +126,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
   const [newContent, setNewContent] = useState('');
   const [newNewcomerName, setNewNewcomerName] = useState('');
   const [newNewcomerDesc, setNewNewcomerDesc] = useState('');
-  const [newNewcomerImage, setNewNewcomerImage] = useState('');
 
   // 6대 섹션 및 하위 메뉴 규격
   const SECTIONS = {
@@ -212,24 +211,31 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
     return posts.filter(p => p.category === cat && p.title.toLowerCase().includes(searchKeyword.toLowerCase()));
   };
 
+  // 관리자 로그인 확인
+  const handleAdminAuth = () => {
+    if (adminPassword.trim() === 'zion1218') {
+      setIsAdminAuthenticated(true);
+    } else {
+      alert('비밀번호가 올바르지 않습니다.');
+    }
+  };
+
   // 관리자 게시글 등록
   const handleAdminSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (currentSubMenuId === 'newcomers-intro') {
-      if (!newNewcomerName) return;
+      if (!newNewcomerName.trim()) return;
       const newCard = {
         id: `nc_${Date.now()}`,
-        name: newNewcomerName,
+        name: newNewcomerName.trim(),
         date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
-        desc: newNewcomerDesc || '시온성교회 새가족을 환영합니다.',
-        imageUrl: newNewcomerImage || 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=400&q=80',
+        desc: newNewcomerDesc.trim() || '시온성교회 새가족을 환영합니다.',
       };
       setNewcomers([newCard, ...newcomers]);
       setNewNewcomerName('');
       setNewNewcomerDesc('');
-      setNewNewcomerImage('');
       setIsAdminOpen(false);
-      alert('새가족 카드가 등록되었습니다.');
+      alert('새가족 소개가 성공적으로 등록되었습니다.');
       return;
     }
 
@@ -238,14 +244,14 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
       id: `p_${Date.now()}`,
       no: posts.length + 1,
       category: adminTargetCategory,
-      title: newTitle,
-      author: newAuthor,
+      title: newTitle.trim(),
+      author: newAuthor.trim(),
       date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
       views: 1,
-      content: newContent,
-      scripture: newScripture,
-      youtubeId: newYoutubeId,
-      audioUrl: newAudioUrl,
+      content: newContent.trim(),
+      scripture: newScripture.trim(),
+      youtubeId: newYoutubeId.trim(),
+      audioUrl: newAudioUrl.trim(),
     };
     setPosts([newPost, ...posts]);
     setNewTitle('');
@@ -340,7 +346,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               <span className="text-slate-800 font-bold">{currentSubMenu.name}</span>
             </div>
 
-            {/* 1. 큐티인 안내 카드 (이미지 16, 17, 18 반영) */}
+            {/* 1. 큐티인 안내 카드 */}
             {currentSubMenuId === 'qt-guide' && (
               <div className="space-y-8">
                 <div>
@@ -390,7 +396,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 2. THINK 양육 프로그램 카드 (이미지 19 반영) */}
+            {/* 2. THINK 양육 프로그램 카드 */}
             {currentSubMenuId === 'discipleship-think' && (
               <div className="space-y-8">
                 <div>
@@ -438,7 +444,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 3. 새가족 안내: 처음 오신 분께 (이미지 20 반영) */}
+            {/* 3. 처음 오신 분께 */}
             {currentSubMenuId === 'newcomers-welcome' && (
               <div className="space-y-8">
                 <div>
@@ -472,29 +478,23 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 4. 새가족 소개 (사진 그리드 카드) */}
+            {/* 4. 새가족 소개 (사진 없이 단정한 텍스트 카드) */}
             {currentSubMenuId === 'newcomers-intro' && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-1">새가족 소개</h1>
-                    <p className="text-xs sm:text-sm text-slate-500">시온성교회의 새가족을 기쁨으로 환영합니다.</p>
-                  </div>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-1">새가족 소개</h1>
+                  <p className="text-xs sm:text-sm text-slate-500">시온성교회의 새가족을 기쁨으로 환영합니다.</p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   {newcomers.map((nc) => (
-                    <div key={nc.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs hover:shadow-md transition-shadow">
-                      <div className="aspect-[4/3] bg-slate-100 overflow-hidden">
-                        <img src={nc.imageUrl} alt={nc.name} className="w-full h-full object-cover" />
+                    <div key={nc.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2 shadow-2xs hover:shadow-xs transition-shadow">
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span className="font-bold text-[#A27B2B]">새가족 등록</span>
+                        <span>{nc.date}</span>
                       </div>
-                      <div className="p-4 space-y-1">
-                        <div className="flex items-center justify-between text-xs text-slate-400">
-                          <span>{nc.date}</span>
-                        </div>
-                        <h3 className="font-extrabold text-base text-slate-900">{nc.name}</h3>
-                        <p className="text-xs text-slate-600">{nc.desc}</p>
-                      </div>
+                      <h3 className="font-extrabold text-lg text-slate-900">{nc.name}</h3>
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{nc.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -516,448 +516,4 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
                   <div className="p-5 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
-                    <h3 className="font-bold text-slate-900">01. 복음의 본질</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">내 의와 공로가 아닌 오직 십자가 예수 그리스도의 구속 은혜를 붙듭니다.</p>
-                  </div>
-                  <div className="p-5 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
-                    <h3 className="font-bold text-slate-900">02. 수용과 안식</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">판단과 정죄 대신 연약함을 있는 그대로 품고 참된 쉼을 누립니다.</p>
-                  </div>
-                  <div className="p-5 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
-                    <h3 className="font-bold text-slate-900">03. 죄 고백과 회복</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">내 죄를 보고 솔직하게 직면할 때 참된 가정과 공동체의 회복이 시작됩니다.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 6. 섬기는 분들 카드 그리드 (이미지 15 반영) */}
-            {currentSubMenuId === 'church-leaders' && (
-              <div className="space-y-8">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">섬기는 분들</h1>
-                  <p className="text-xs sm:text-sm text-slate-500">시온성교회를 기쁨과 기도로 섬기는 교역자 및 당회원입니다.</p>
-                </div>
-                
-                {['교역자', '시무장로', '원로·명예·은퇴장로'].map((groupName) => (
-                  <div key={groupName} className="space-y-4">
-                    <h3 className="text-base font-bold text-slate-900 pb-2 border-b border-slate-200 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[#C49A45]" />
-                      <span>{groupName}</span>
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {CHURCH_STAFF.filter(s => s.group === groupName).map((staff, idx) => (
-                        <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 flex items-center gap-3.5 hover:shadow-xs transition-shadow">
-                          <div className="w-12 h-12 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm shrink-0 border border-slate-300">
-                            {staff.name.slice(0, 1)}
-                          </div>
-                          <div>
-                            <span className="text-[11px] font-bold text-[#A27B2B] block">{staff.role}</span>
-                            <strong className="text-sm text-slate-900 block">{staff.name}</strong>
-                            <span className="text-[11px] text-slate-500 line-clamp-1">{staff.desc}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* 7. 예배 시간표 그리드 (이미지 21 반영) */}
-            {currentSubMenuId === 'worship-table-grid' && (
-              <div className="space-y-6">
-                <div>
-                  <span className="text-xs font-bold text-[#C49A45] tracking-widest uppercase block mb-1">WORSHIP SCHEDULE</span>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">01 예배와 모임 안내</h1>
-                  <p className="text-xs text-slate-500 mt-1">영과 진리로 드려지는 은혜와 회복의 예배</p>
-                </div>
-
-                <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
-                  <table className="w-full text-xs sm:text-sm text-left">
-                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
-                      <tr>
-                        <th className="p-3.5 sm:p-4">예배 및 모임명</th>
-                        <th className="p-3.5 sm:p-4">시간</th>
-                        <th className="p-3.5 sm:p-4">장소</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">주일 1부 예배</td><td className="p-3.5 sm:p-4 text-amber-700 font-semibold">주일 오전 10:00</td><td className="p-3.5 sm:p-4">본당 대예배실</td></tr>
-                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">주일 2부 예배</td><td className="p-3.5 sm:p-4 text-amber-700 font-semibold">주일 오전 11:20</td><td className="p-3.5 sm:p-4">본당 대예배실</td></tr>
-                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">다음세대 예배 (큐티스쿨)</td><td className="p-3.5 sm:p-4">주일 오후 12:00</td><td className="p-3.5 sm:p-4">3층 소예배실</td></tr>
-                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">주일 양육반 (10주 과정)</td><td className="p-3.5 sm:p-4">주일 오후 01:00</td><td className="p-3.5 sm:p-4">각 교육실</td></tr>
-                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">목장 모임 (소그룹 나눔)</td><td className="p-3.5 sm:p-4">주일 오후 02:30</td><td className="p-3.5 sm:p-4">각 목장 처소</td></tr>
-                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">수요 행복예배</td><td className="p-3.5 sm:p-4 text-amber-700 font-semibold">매주 수요일 저녁 8:00</td><td className="p-3.5 sm:p-4">본당 대예배실</td></tr>
-                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">금요 기도회</td><td className="p-3.5 sm:p-4 text-amber-700 font-semibold">매주 금요일 밤 8:00</td><td className="p-3.5 sm:p-4">본당 대예배실</td></tr>
-                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">화목 기도회</td><td className="p-3.5 sm:p-4">화·목 저녁 밤 8:00</td><td className="p-3.5 sm:p-4">본당 대예배실</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* 8. 온라인 헌금 계좌 그리드 */}
-            {currentSubMenuId === 'offering-grid' && (
-              <div className="space-y-6">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">온라인 헌금 계좌</h1>
-                  <p className="text-xs sm:text-sm text-slate-500">기쁨과 감사함으로 드리는 거룩한 물질의 헌신입니다.</p>
-                </div>
-
-                <div className="p-6 sm:p-8 rounded-2xl bg-slate-50 border border-slate-200 max-w-lg space-y-4">
-                  <div className="flex items-center gap-2 text-slate-900 font-bold">
-                    <CreditCard className="w-5 h-5 text-[#C49A45]" />
-                    <span>농협은행 (교회 공식계좌)</span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-500 block mb-1">예금주: 대한예수교장로회 시온성교회</span>
-                    <strong className="text-2xl sm:text-3xl font-black font-mono text-[#A27B2B] tracking-tight block">
-                      131-020-284906
-                    </strong>
-                  </div>
-                  <button
-                    onClick={handleCopyAccount}
-                    className="w-full py-2.5 rounded-xl bg-[#111827] text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-slate-800"
-                  >
-                    {copiedAccount ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    <span>{copiedAccount ? '계좌번호가 복사되었습니다' : '계좌번호 복사하기'}</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* 9. 오시는 길 (이미지 22 광암동 정수장 맞은편 반영) */}
-            {currentSubMenuId === 'map-location' && (
-              <div className="space-y-6">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">오시는 길</h1>
-                  <p className="text-xs sm:text-sm text-slate-500">하남 시온성교회로 오시는 길을 안내해 드립니다.</p>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-[#C49A45]" />
-                    <strong className="text-base text-slate-900">경기 하남시 서하남로 278-30 (광암동)</strong>
-                  </div>
-                  <p className="text-xs sm:text-sm text-amber-900 pl-7">
-                    * <strong>광암동 정수장 후문 맞은편</strong>에 위치하고 있습니다. (서하남 IC에서 3분 거리)
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-sm bg-slate-100 p-2">
-                  <div className="aspect-[16/9] w-full bg-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-500 text-xs sm:text-sm space-y-3">
-                    <MapPin className="w-8 h-8 text-rose-500 animate-bounce" />
-                    <div className="text-center">
-                      <strong className="text-slate-800 text-base block">하남 시온성교회</strong>
-                      <span>광암동 정수장 맞은편 (서하남로 278-30)</span>
-                    </div>
-                    <div className="flex gap-2 pt-2">
-                      <a href="https://map.naver.com/v5/search/%ED%95%98%EB%82%A8%20%EC%8B%9C%EC%98%A8%EC%84%B1%EA%B5%90%ED%9A%8C" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs">네이버지도 길찾기</a>
-                      <a href="https://map.kakao.com/link/search/%ED%95%98%EB%82%A8%20%EC%8B%9C%EC%98%A8%EC%84%B1%EA%B5%90%ED%9A%8C" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-[#FEE500] text-slate-900 font-bold text-xs">카카오맵 길찾기</a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 10. 일반 게시판 글 상세보기 */}
-            {selectedPost && (
-              <div className="space-y-6">
-                <div className="pb-4 border-b border-slate-200">
-                  <button
-                    onClick={() => setSelectedPost(null)}
-                    className="text-xs font-bold text-slate-500 hover:text-slate-900 inline-flex items-center gap-1 mb-3 cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>목록으로 돌아가기</span>
-                  </button>
-                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{selectedPost.title}</h1>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2">
-                    <span>작성자: <strong>{selectedPost.author}</strong></span>
-                    <span>|</span>
-                    <span>날짜: {selectedPost.date}</span>
-                    {selectedPost.scripture && (
-                      <>
-                        <span>|</span>
-                        <span>본문: <strong className="text-amber-800">{selectedPost.scripture}</strong></span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* 유튜브 영상 지원 (주일/수요/금요) */}
-                {selectedPost.youtubeId && (
-                  <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-md">
-                    <iframe
-                      src={`https://www.youtube-nocookie.com/embed/${selectedPost.youtubeId}`}
-                      title={selectedPost.title}
-                      className="absolute inset-0 w-full h-full border-0"
-                      allowFullScreen
-                    />
-                  </div>
-                )}
-
-                {/* 화목 기도회 음성 지원 */}
-                {selectedPost.audioUrl && (
-                  <div className="p-4 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-3">
-                    <Volume2 className="w-5 h-5 text-amber-700 shrink-0" />
-                    <audio controls className="w-full h-8">
-                      <source src={selectedPost.audioUrl} type="audio/mpeg" />
-                      브라우저가 오디오 재생을 지원하지 않습니다.
-                    </audio>
-                  </div>
-                )}
-
-                <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">
-                  {selectedPost.content}
-                </div>
-              </div>
-            )}
-
-            {/* 11. 일반 게시판 목록 화면 */}
-            {!selectedPost && [
-              'sunday-sermon', 'wednesday-sermon', 'friday-sermon', 'evening-prayer',
-              'cell-couple', 'cell-young', 'ministry-team', 'mission-local'
-            ].includes(currentSubMenuId) && (
-              <div className="space-y-6">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
-                    {currentSubMenu.name}
-                  </h1>
-                </div>
-
-                {/* 검색창 */}
-                <div className="flex items-center justify-end gap-2 pb-4 border-b border-slate-200">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="검색어를 입력해 주세요."
-                      value={searchKeyword}
-                      onChange={(e) => setSearchKeyword(e.target.value)}
-                      className="w-56 pl-3 pr-8 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800"
-                    />
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
-                  </div>
-                </div>
-
-                {/* 게시글 표 */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs sm:text-sm">
-                    <thead>
-                      <tr className="border-y border-slate-200 bg-slate-50/80 text-slate-600 font-bold">
-                        <th className="py-3 px-3 text-center w-16">번호</th>
-                        <th className="py-3 px-4">제목</th>
-                        <th className="py-3 px-3 text-center w-24">작성자</th>
-                        <th className="py-3 px-3 text-center w-24">날짜</th>
-                        <th className="py-3 px-3 text-center w-16 hidden sm:table-cell">조회</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredList.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="py-12 text-center text-slate-400 text-xs">
-                            등록된 게시글이 없습니다. 우측 상단 관리자 모드에서 글을 등록해 주세요.
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredList.map((post) => (
-                          <tr
-                            key={post.id}
-                            onClick={() => setSelectedPost(post)}
-                            className="hover:bg-slate-50 transition-colors cursor-pointer group"
-                          >
-                            <td className="py-3.5 px-3 text-center text-slate-400 font-mono text-xs">{post.no}</td>
-                            <td className="py-3.5 px-4 font-semibold text-slate-900 group-hover:text-[#C49A45] transition-colors">
-                              <span className="line-clamp-1">{post.title}</span>
-                            </td>
-                            <td className="py-3.5 px-3 text-center text-slate-500">{post.author}</td>
-                            <td className="py-3.5 px-3 text-center text-slate-400 font-mono text-xs">{post.date}</td>
-                            <td className="py-3.5 px-3 text-center text-slate-400 font-mono text-xs hidden sm:table-cell">{post.views}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </main>
-        </div>
-
-        {/* ========================================================= */}
-        {/* 관리자 글쓰기 모달                                         */}
-        {/* ========================================================= */}
-        {isAdminOpen && (
-          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-              <div className="flex items-center justify-between border-b pb-3">
-                <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-1.5">
-                  <Lock className="w-4 h-4 text-[#C49A45]" />
-                  <span>관리자 등록 모드</span>
-                </h3>
-                <button onClick={() => setIsAdminOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer text-sm font-bold">닫기</button>
-              </div>
-
-              {!isAdminAuthenticated ? (
-                <div className="space-y-3 py-4">
-                  <p className="text-xs text-slate-600">관리자 비밀번호를 입력해주세요. (임시: <strong>zion1218</strong>)</p>
-                  <input
-                    type="password"
-                    placeholder="비밀번호 입력"
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm"
-                  />
-                  <button
-                    onClick={() => {
-                      if (adminPassword === 'zion1218') setIsAdminAuthenticated(true);
-                      else alert('비밀번호가 올바르지 않습니다.');
-                    }}
-                    className="w-full py-2.5 rounded-xl bg-[#111827] text-white font-bold text-xs cursor-pointer hover:bg-slate-800"
-                  >
-                    로그인 확인
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleAdminSubmit} className="space-y-3 max-h-[75vh] overflow-y-auto pr-1">
-                  {currentSubMenuId === 'newcomers-intro' ? (
-                    <>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">새가족 성함 / 가정명</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="예: 홍길동 성도 가정"
-                          value={newNewcomerName}
-                          onChange={(e) => setNewNewcomerName(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">설명 및 목장 배정</label>
-                        <input
-                          type="text"
-                          placeholder="예: 2목장 배정 | 주님의 이름으로 축복합니다."
-                          value={newNewcomerDesc}
-                          onChange={(e) => setNewNewcomerDesc(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">사진 이미지 URL</label>
-                        <input
-                          type="text"
-                          placeholder="https://..."
-                          value={newNewcomerImage}
-                          onChange={(e) => setNewNewcomerImage(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">등록할 카테고리</label>
-                        <select
-                          value={adminTargetCategory}
-                          onChange={(e) => setAdminTargetCategory(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
-                        >
-                          <option value="sunday">주일예배</option>
-                          <option value="wednesday">수요행복예배</option>
-                          <option value="friday">금요기도회</option>
-                          <option value="tue-thu">화·목 저녁기도회</option>
-                          <option value="cell-couple">부부·가정 목장</option>
-                          <option value="cell-young">청년·직장 목장</option>
-                          <option value="ministry">사역부서 안내</option>
-                          <option value="mission">선교 및 구제</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">제목</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="제목을 입력하세요"
-                          value={newTitle}
-                          onChange={(e) => setNewTitle(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">작성자</label>
-                          <input
-                            type="text"
-                            value={newAuthor}
-                            onChange={(e) => setNewAuthor(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">성경 본문 (선택)</label>
-                          <input
-                            type="text"
-                            placeholder="예: 창세기 35:1~3"
-                            value={newScripture}
-                            onChange={(e) => setNewScripture(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">유튜브 영상 ID (선택 - 주일/수요/금요)</label>
-                        <input
-                          type="text"
-                          placeholder="예: 1azfrCPgb84"
-                          value={newYoutubeId}
-                          onChange={(e) => setNewYoutubeId(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">음성 파일 URL (선택 - 화목 기도회)</label>
-                        <input
-                          type="text"
-                          placeholder="https://.../audio.mp3"
-                          value={newAudioUrl}
-                          onChange={(e) => setNewAudioUrl(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">내용 / 요약문</label>
-                        <textarea
-                          required
-                          rows={4}
-                          placeholder="내용을 입력하세요."
-                          value={newContent}
-                          onChange={(e) => setNewContent(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm resize-none"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 rounded-xl bg-[#C49A45] hover:bg-[#A27B2B] text-white font-bold text-xs cursor-pointer"
-                  >
-                    등록 완료하기
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        )}
-
-      </div>
-    </div>
-  );
-};
+                    <h3 className="font-bold text-slate-9
