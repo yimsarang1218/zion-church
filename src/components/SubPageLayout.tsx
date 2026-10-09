@@ -560,7 +560,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 7. 예배 시간표 그리드 (에러 수정된 테이블 구역) */}
+            {/* 7. 예배 시간표 그리드 */}
             {currentSubMenuId === 'worship-table-grid' && (
               <div className="space-y-6">
                 <div>
@@ -593,7 +593,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 8. 온라인 헌금 계좌 */}
+            {/* 8. 온라인 헌금 계좌 (태그 짝 오류 완전 교정 구역) */}
             {currentSubMenuId === 'offering-grid' && (
               <div className="space-y-6">
                 <div>
@@ -611,3 +611,337 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                     <strong className="text-2xl sm:text-3xl font-black font-mono text-[#A27B2B] tracking-tight block">
                       131-020-284906
                     </strong>
+                  </div>
+                  <button
+                    onClick={handleCopyAccount}
+                    className="w-full py-2.5 rounded-xl bg-[#111827] text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-slate-800"
+                  >
+                    {copiedAccount ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    <span>{copiedAccount ? '계좌번호가 복사되었습니다' : '계좌번호 복사하기'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 9. 오시는 길 */}
+            {currentSubMenuId === 'map-location' && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">오시는 길</h1>
+                  <p className="text-xs sm:text-sm text-slate-500">하남 시온성교회로 오시는 길을 안내해 드립니다.</p>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-[#C49A45]" />
+                    <strong className="text-base text-slate-900">경기 하남시 서하남로 278-30 (광암동)</strong>
+                  </div>
+                  <p className="text-xs sm:text-sm text-amber-900 pl-7">
+                    * <strong>광암동 정수장 후문 맞은편</strong>에 위치하고 있습니다. (서하남 IC에서 3분 거리)
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-sm bg-slate-100 p-2">
+                  <div className="aspect-[16/9] w-full bg-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-500 text-xs sm:text-sm space-y-3">
+                    <MapPin className="w-8 h-8 text-rose-500 animate-bounce" />
+                    <div className="text-center">
+                      <strong className="text-slate-800 text-base block">하남 시온성교회</strong>
+                      <span>광암동 정수장 맞은편 (서하남로 278-30)</span>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <a href="https://map.naver.com/v5/search/%ED%95%98%EB%82%A8%20%EC%8B%9C%EC%98%A8%EC%84%B1%EA%B5%90%ED%9A%8C" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs">네이버지도 길찾기</a>
+                      <a href="https://map.kakao.com/link/search/%ED%95%98%EB%82%A8%20%EC%8B%9C%EC%98%A8%EC%84%B1%EA%B5%90%ED%9A%8C" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-[#FEE500] text-slate-900 font-bold text-xs">카카오맵 길찾기</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 10. 일반 게시판 글 상세보기 */}
+            {selectedPost && (
+              <div className="space-y-6">
+                <div className="pb-4 border-b border-slate-200">
+                  <button
+                    onClick={() => setSelectedPost(null)}
+                    className="text-xs font-bold text-slate-500 hover:text-slate-900 inline-flex items-center gap-1 mb-3 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>목록으로 돌아가기</span>
+                  </button>
+                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{selectedPost.title}</h1>
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2">
+                    <span>작성자: <strong>{selectedPost.author}</strong></span>
+                    <span>|</span>
+                    <span>날짜: {selectedPost.date}</span>
+                    {selectedPost.scripture && (
+                      <>
+                        <span>|</span>
+                        <span>본문: <strong className="text-amber-800">{selectedPost.scripture}</strong></span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* 유튜브 영상 지원 */}
+                {selectedPost.youtubeId && (
+                  <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-md">
+                    <iframe
+                      src={`https://www.youtube-nocookie.com/embed/${selectedPost.youtubeId}`}
+                      title={selectedPost.title}
+                      className="absolute inset-0 w-full h-full border-0"
+                      allowFullScreen
+                    />
+                  </div>
+                )}
+
+                {/* 화목 기도회 음성 지원 */}
+                {selectedPost.audioUrl && (
+                  <div className="p-4 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-3">
+                    <Volume2 className="w-5 h-5 text-amber-700 shrink-0" />
+                    <audio controls className="w-full h-8">
+                      <source src={selectedPost.audioUrl} type="audio/mpeg" />
+                      브라우저가 오디오 재생을 지원하지 않습니다.
+                    </audio>
+                  </div>
+                )}
+
+                <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">
+                  {selectedPost.content}
+                </div>
+              </div>
+            )}
+
+            {/* 11. 일반 게시판 목록 화면 */}
+            {!selectedPost && [
+              'sunday-sermon', 'wednesday-sermon', 'friday-sermon', 'evening-prayer',
+              'cell-couple', 'cell-young', 'ministry-team', 'mission-local'
+            ].includes(currentSubMenuId) && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+                    {currentSubMenu.name}
+                  </h1>
+                </div>
+
+                {/* 검색창 */}
+                <div className="flex items-center justify-end gap-2 pb-4 border-b border-slate-200">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="검색어를 입력해 주세요."
+                      value={searchKeyword}
+                      onChange={(e) => setSearchKeyword(e.target.value)}
+                      className="w-56 pl-3 pr-8 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800"
+                    />
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  </div>
+                </div>
+
+                {/* 게시글 목록 표 */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                    <thead>
+                      <tr className="border-y border-slate-200 bg-slate-50/80 text-slate-600 font-bold">
+                        <th className="py-3 px-3 text-center w-16">번호</th>
+                        <th className="py-3 px-4">제목</th>
+                        <th className="py-3 px-3 text-center w-24">작성자</th>
+                        <th className="py-3 px-3 text-center w-24">날짜</th>
+                        <th className="py-3 px-3 text-center w-16 hidden sm:table-cell">조회</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredList.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-12 text-center text-slate-400 text-xs">
+                            등록된 게시글이 없습니다. 우측 상단 관리자 모드에서 글을 등록해 주세요.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredList.map((post) => (
+                          <tr
+                            key={post.id}
+                            onClick={() => setSelectedPost(post)}
+                            className="hover:bg-slate-50 transition-colors cursor-pointer group"
+                          >
+                            <td className="py-3.5 px-3 text-center text-slate-400 font-mono text-xs">{post.no}</td>
+                            <td className="py-3.5 px-4 font-semibold text-slate-900 group-hover:text-[#C49A45] transition-colors">
+                              <span className="line-clamp-1">{post.title}</span>
+                            </td>
+                            <td className="py-3.5 px-3 text-center text-slate-500">{post.author}</td>
+                            <td className="py-3.5 px-3 text-center text-slate-400 font-mono text-xs">{post.date}</td>
+                            <td className="py-3.5 px-3 text-center text-slate-400 font-mono text-xs hidden sm:table-cell">{post.views}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </main>
+        </div>
+
+        {/* 관리자 글쓰기 모달 */}
+        {isAdminOpen && (
+          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b pb-3">
+                <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-1.5">
+                  <Lock className="w-4 h-4 text-[#C49A45]" />
+                  <span>관리자 등록 모드</span>
+                </h3>
+                <button onClick={() => setIsAdminOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer text-sm font-bold">닫기</button>
+              </div>
+
+              {!isAdminAuthenticated ? (
+                <div className="space-y-3 py-4">
+                  <p className="text-xs text-slate-600">관리자 비밀번호를 입력해주세요.</p>
+                  <input
+                    type="password"
+                    placeholder="비밀번호 입력"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAdminAuth();
+                    }}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm"
+                  />
+                  <button
+                    onClick={handleAdminAuth}
+                    className="w-full py-2.5 rounded-xl bg-[#111827] text-white font-bold text-xs cursor-pointer hover:bg-slate-800"
+                  >
+                    로그인 확인
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleAdminSubmit} className="space-y-3 max-h-[75vh] overflow-y-auto pr-1">
+                  {currentSubMenuId === 'newcomers-intro' ? (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">새가족 성함 / 가정명</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="예: 홍길동 성도 가정"
+                          value={newNewcomerName}
+                          onChange={(e) => setNewNewcomerName(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">설명 및 목장 배정</label>
+                        <input
+                          type="text"
+                          placeholder="예: 2목장 배정 | 주님의 이름으로 축복합니다."
+                          value={newNewcomerDesc}
+                          onChange={(e) => setNewNewcomerDesc(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">등록할 카테고리</label>
+                        <select
+                          value={adminTargetCategory}
+                          onChange={(e) => setAdminTargetCategory(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
+                        >
+                          <option value="sunday">주일예배</option>
+                          <option value="wednesday">수요행복예배</option>
+                          <option value="friday">금요기도회</option>
+                          <option value="tue-thu">화·목 저녁기도회</option>
+                          <option value="cell-couple">부부·가정 목장</option>
+                          <option value="cell-young">청년·직장 목장</option>
+                          <option value="ministry">사역부서 안내</option>
+                          <option value="mission">선교 및 구제</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">제목</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="제목을 입력하세요"
+                          value={newTitle}
+                          onChange={(e) => setNewTitle(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">작성자</label>
+                          <input
+                            type="text"
+                            value={newAuthor}
+                            onChange={(e) => setNewAuthor(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">성경 본문 (선택)</label>
+                          <input
+                            type="text"
+                            placeholder="예: 창세기 35:1~3"
+                            value={newScripture}
+                            onChange={(e) => setNewScripture(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">유튜브 영상 ID (선택 - 주일/수요/금요)</label>
+                        <input
+                          type="text"
+                          placeholder="예: 1azfrCPgb84"
+                          value={newYoutubeId}
+                          onChange={(e) => setNewYoutubeId(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">음성 파일 URL (선택 - 화목 기도회)</label>
+                        <input
+                          type="text"
+                          placeholder="https://.../audio.mp3"
+                          value={newAudioUrl}
+                          onChange={(e) => setNewAudioUrl(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">내용 / 요약문</label>
+                        <textarea
+                          required
+                          rows={4}
+                          placeholder="내용을 입력하세요."
+                          value={newContent}
+                          onChange={(e) => setNewContent(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm resize-none"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 rounded-xl bg-[#C49A45] hover:bg-[#A27B2B] text-white font-bold text-xs cursor-pointer"
+                  >
+                    등록 완료하기
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+};
