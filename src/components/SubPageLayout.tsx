@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   Home, ChevronRight, Search, ArrowLeft, Eye, Calendar, 
   User, Plus, Lock, Check, Video, Volume2, MapPin, 
-  CreditCard, BookOpen, Heart, Sparkles, Navigation, Copy, Loader2
+  CreditCard, BookOpen, Heart, Sparkles, Navigation, Copy, Loader2,
+  Trash2, Image as ImageIcon
 } from 'lucide-react';
-import { collection, getDocs, addDoc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { CHURCH_INFO } from '../data/churchData';
 
@@ -38,7 +39,15 @@ interface NewcomerItem {
   desc: string;
 }
 
-// 기본 Fallback 데이터 (DB가 비어있을 때 표시)
+interface GalleryItem {
+  id: string;
+  title: string;
+  date: string;
+  imageUrl: string;
+  desc?: string;
+}
+
+// 1. 기본 Fallback 설교 및 게시글 데이터
 const DEFAULT_POSTS: PostItem[] = [
   {
     id: 'p1',
@@ -91,6 +100,23 @@ const DEFAULT_NEWCOMERS: NewcomerItem[] = [
   { id: 'n2', name: '이수진 청년', date: '2026.10.04', desc: '청년목장 배정 | 믿음의 동역자로 함께 걷습니다.' },
 ];
 
+const DEFAULT_GALLERY: GalleryItem[] = [
+  {
+    id: 'g1',
+    title: '2026 전교생 주일 큐티 나눔 축제',
+    date: '2026.10.04',
+    imageUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80',
+    desc: '온 세대가 함께 모여 말씀 안에서 기쁨을 나눈 은혜의 현장입니다.',
+  },
+  {
+    id: 'g2',
+    title: '가을 사랑방 야외 교제 및 연합 예배',
+    date: '2026.09.20',
+    imageUrl: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80',
+    desc: '주 안에서 하나 된 시온성교회 성도님들의 따뜻한 교제 시간입니다.',
+  },
+];
+
 const CHURCH_STAFF = [
   { group: '교역자', role: '담임목사', name: '채준희' },
   { group: '교역자', role: '동사목사', name: '임사랑' },
@@ -112,9 +138,10 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
   const [currentSectionId, setCurrentSectionId] = useState(initialSectionId || 'worship');
   const [currentSubMenuId, setCurrentSubMenuId] = useState(initialSubMenuId || 'sunday-sermon');
   
-  // Firestore 연동 상태
+  // Firestore DB 실시간 연동 상태
   const [posts, setPosts] = useState<PostItem[]>(DEFAULT_POSTS);
   const [newcomers, setNewcomers] = useState<NewcomerItem[]>(DEFAULT_NEWCOMERS);
+  const [gallery, setGallery] = useState<GalleryItem[]>(DEFAULT_GALLERY);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -127,7 +154,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
   const [adminPassword, setAdminPassword] = useState('');
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   
-  // 관리자 폼 상태
+  // 관리자 입력 폼 상태
   const [adminTargetCategory, setAdminTargetCategory] = useState('sunday');
   const [newTitle, setNewTitle] = useState('');
   const [newAuthor, setNewAuthor] = useState('관리자');
@@ -137,13 +164,16 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
   const [newContent, setNewContent] = useState('');
   const [newNewcomerName, setNewNewcomerName] = useState('');
   const [newNewcomerDesc, setNewNewcomerDesc] = useState('');
+  const [newGalleryTitle, setNewGalleryTitle] = useState('');
+  const [newGalleryImage, setNewGalleryImage] = useState('');
+  const [newGalleryDesc, setNewGalleryDesc] = useState('');
 
-  // 1. 컴포넌트 마운트 시 Firestore에서 글 목록 불러오기
+  // 1. 컴포넌트 마운트 시 Firestore에서 데이터 불러오기
   useEffect(() => {
     const fetchFirestoreData = async () => {
       try {
         setIsLoading(true);
-        // 게시글 컬렉션 조회
+        // 게시글 컬렉션
         const postsRef = collection(db, 'posts');
         const postsSnap = await getDocs(postsRef);
         if (!postsSnap.empty) {
@@ -154,7 +184,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
           setPosts(loadedPosts);
         }
 
-        // 새가족 컬렉션 조회
+        // 새가족 컬렉션
         const newcomersRef = collection(db, 'newcomers');
         const newcomersSnap = await getDocs(newcomersRef);
         if (!newcomersSnap.empty) {
@@ -163,6 +193,17 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
             ...(doc.data() as Omit<NewcomerItem, 'id'>)
           }));
           setNewcomers(loadedNewcomers);
+        }
+
+        // 갤러리 컬렉션
+        const galleryRef = collection(db, 'gallery');
+        const gallerySnap = await getDocs(galleryRef);
+        if (!gallerySnap.empty) {
+          const loadedGallery: GalleryItem[] = gallerySnap.docs.map(doc => ({
+            id: doc.id,
+            ...(doc.data() as Omit<GalleryItem, 'id'>)
+          }));
+          setGallery(loadedGallery);
         }
       } catch (error) {
         console.warn('Firestore 연동 실패 또는 오프라인 모드:', error);
@@ -174,6 +215,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
     fetchFirestoreData();
   }, []);
 
+  // 6대 섹션 및 하위 메뉴 규격 (상단 네비와 100% 일치)
   const SECTIONS = {
     worship: {
       title: '예배와 말씀',
@@ -204,7 +246,9 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
       title: '사역과 선교',
       subMenus: [
         { id: 'ministry-team', name: '사역부서 안내', category: 'ministry' },
-        { id: 'mission-local', name: '국내외 선교 및 구제', category: 'mission' },
+        { id: 'qt-school-dept', name: '큐티스쿨 (다음세대)' },
+        { id: 'mission-local', name: '선교 및 지역 구제', category: 'mission' },
+        { id: 'church-gallery', name: '시온성 갤러리' },
       ],
     },
     newcomers: {
@@ -255,22 +299,50 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
 
     return posts.filter(p => p.category === cat && p.title.toLowerCase().includes(searchKeyword.toLowerCase()));
   };
-// 관리자 인증 처리
+
   const handleAdminAuth = () => {
     const inputClean = adminPassword.trim().toLowerCase();
     if (inputClean === 'zion1218') {
       setIsAdminAuthenticated(true);
     } else {
-      alert('비밀번호가 올바르지 않습니다. 다시 입력해 주세요.');
+      alert('비밀번호가 올바르지 않습니다.');
     }
   };
 
-  // 2. 관리자 글 등록 (Firestore DB에 addDoc 영구 저장)
+  // 관리자 게시글 등록 (Firestore addDoc 영구 저장)
   const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
+      // 1) 갤러리 등록
+      if (currentSubMenuId === 'church-gallery') {
+        if (!newGalleryTitle.trim() || !newGalleryImage.trim()) {
+          alert('제목과 이미지 URL을 모두 입력해 주세요.');
+          setIsSubmitting(false);
+          return;
+        }
+        const newGalleryData = {
+          title: newGalleryTitle.trim(),
+          date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
+          imageUrl: newGalleryImage.trim(),
+          desc: newGalleryDesc.trim() || '시온성교회 사역 활동 모습입니다.',
+        };
+        try {
+          const docRef = await addDoc(collection(db, 'gallery'), newGalleryData);
+          setGallery([{ id: docRef.id, ...newGalleryData }, ...gallery]);
+        } catch {
+          setGallery([{ id: `g_${Date.now()}`, ...newGalleryData }, ...gallery]);
+        }
+        setNewGalleryTitle('');
+        setNewGalleryImage('');
+        setNewGalleryDesc('');
+        setIsAdminOpen(false);
+        alert('갤러리 사진이 성공적으로 등록되었습니다.');
+        return;
+      }
+
+      // 2) 새가족 등록
       if (currentSubMenuId === 'newcomers-intro') {
         if (!newNewcomerName.trim()) return;
         const newCardData = {
@@ -278,15 +350,12 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
           date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
           desc: newNewcomerDesc.trim() || '시온성교회 새가족을 환영합니다.',
         };
-
-        // Firestore 저장 시도
         try {
           const docRef = await addDoc(collection(db, 'newcomers'), newCardData);
           setNewcomers([{ id: docRef.id, ...newCardData }, ...newcomers]);
         } catch {
           setNewcomers([{ id: `nc_${Date.now()}`, ...newCardData }, ...newcomers]);
         }
-
         setNewNewcomerName('');
         setNewNewcomerDesc('');
         setIsAdminOpen(false);
@@ -294,6 +363,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
         return;
       }
 
+      // 3) 일반 게시글/설교 등록
       if (!newTitle.trim()) return;
       const newPostData = {
         no: posts.length + 1,
@@ -307,8 +377,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
         youtubeId: newYoutubeId.trim(),
         audioUrl: newAudioUrl.trim(),
       };
-
-      // Firestore 저장 시도
       try {
         const docRef = await addDoc(collection(db, 'posts'), newPostData);
         setPosts([{ id: docRef.id, ...newPostData }, ...posts]);
@@ -328,6 +396,47 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // 관리자 삭제 기능: 게시글 삭제 (Firestore deleteDoc)
+  const handleDeletePost = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!window.confirm('정말 이 게시글을 삭제하시겠습니까? (복구할 수 없습니다)')) return;
+
+    try {
+      await deleteDoc(doc(db, 'posts', id));
+    } catch (err) {
+      console.warn('Firestore 삭제 실패 (로컬에서만 삭제):', err);
+    }
+    setPosts(posts.filter(p => p.id !== id));
+    if (selectedPost?.id === id) {
+      setSelectedPost(null);
+    }
+    alert('게시글이 삭제되었습니다.');
+  };
+
+  // 관리자 삭제 기능: 새가족 카드 삭제
+  const handleDeleteNewcomer = async (id: string) => {
+    if (!window.confirm('이 새가족 카드를 삭제하시겠습니까?')) return;
+    try {
+      await deleteDoc(doc(db, 'newcomers', id));
+    } catch (err) {
+      console.warn('Firestore 삭제 실패:', err);
+    }
+    setNewcomers(newcomers.filter(n => n.id !== id));
+    alert('새가족 카드가 삭제되었습니다.');
+  };
+
+  // 관리자 삭제 기능: 갤러리 사진 삭제
+  const handleDeleteGallery = async (id: string) => {
+    if (!window.confirm('이 갤러리 사진을 삭제하시겠습니까?')) return;
+    try {
+      await deleteDoc(doc(db, 'gallery', id));
+    } catch (err) {
+      console.warn('Firestore 삭제 실패:', err);
+    }
+    setGallery(gallery.filter(g => g.id !== id));
+    alert('갤러리 사진이 삭제되었습니다.');
   };
 
   const handleCopyAccount = () => {
@@ -354,10 +463,14 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
 
           <button
             onClick={() => setIsAdminOpen(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs cursor-pointer"
+            className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border shadow-2xs cursor-pointer transition-colors ${
+              isAdminAuthenticated 
+                ? 'bg-amber-50 text-[#A27B2B] border-amber-300' 
+                : 'bg-white text-slate-500 hover:text-slate-900 border-slate-200'
+            }`}
           >
             <Lock className="w-3.5 h-3.5 text-[#C49A45]" />
-            <span>관리자 모드</span>
+            <span>{isAdminAuthenticated ? '관리자 인증됨' : '관리자 모드'}</span>
           </button>
         </div>
 
@@ -463,7 +576,73 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 2. THINK 양육 프로그램 카드 */}
+            {/* 2. 큐티스쿨 (다음세대) 소개 화면 */}
+            {currentSubMenuId === 'qt-school-dept' && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">큐티스쿨 (다음세대)</h1>
+                  <p className="text-xs sm:text-sm text-slate-500">어린이와 청소년이 말씀으로 자라나는 시온성교회 다음세대 부서입니다.</p>
+                </div>
+                <div className="p-6 sm:p-8 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-3">
+                  <span className="text-xs font-bold text-[#A27B2B] tracking-widest uppercase">NEXT GENERATION QT SCHOOL</span>
+                  <h2 className="text-xl sm:text-3xl font-black text-slate-900">
+                    "어려서부터 성경을 알았나니 성경은 구원에 이르는 지혜가 있느니라"
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600">
+                    매 주일 오후 12:00 | 3층 소예배실 (유·초등부 & 중·고등부 큐티 나눔)
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* 3. 시온성 갤러리 (사진 그리드 + 삭제 지원) */}
+            {currentSubMenuId === 'church-gallery' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-1">시온성 갤러리</h1>
+                    <p className="text-xs sm:text-sm text-slate-500">시온성교회의 은혜로운 사역 현장과 추억을 담은 사진첩입니다.</p>
+                  </div>
+                  {isAdminAuthenticated && (
+                    <button
+                      onClick={() => setIsAdminOpen(true)}
+                      className="px-3.5 py-1.5 rounded-lg bg-[#C49A45] text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>사진 등록</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-2">
+                  {gallery.map((item) => (
+                    <div key={item.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs hover:shadow-md transition-shadow group flex flex-col justify-between">
+                      <div>
+                        <div className="aspect-[4/3] bg-slate-100 overflow-hidden relative">
+                          <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          {isAdminAuthenticated && (
+                            <button
+                              onClick={() => handleDeleteGallery(item.id)}
+                              className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-rose-600 text-white transition-colors cursor-pointer"
+                              title="사진 삭제"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="p-4 space-y-1.5">
+                          <span className="text-[11px] text-slate-400 font-mono block">{item.date}</span>
+                          <h3 className="font-extrabold text-base text-slate-900 line-clamp-1">{item.title}</h3>
+                          {item.desc && <p className="text-xs text-slate-600 line-clamp-2">{item.desc}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 4. THINK 양육 프로그램 카드 */}
             {currentSubMenuId === 'discipleship-think' && (
               <div className="space-y-8">
                 <div>
@@ -511,7 +690,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 3. 처음 오신 분께 */}
+            {/* 5. 새가족 안내: 처음 오신 분께 */}
             {currentSubMenuId === 'newcomers-welcome' && (
               <div className="space-y-8">
                 <div>
@@ -545,7 +724,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 4. 새가족 소개 */}
+            {/* 6. 새가족 소개 (삭제 버튼 지원) */}
             {currentSubMenuId === 'newcomers-intro' && (
               <div className="space-y-6">
                 <div>
@@ -555,10 +734,21 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   {newcomers.map((nc) => (
-                    <div key={nc.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2 shadow-2xs hover:shadow-xs transition-shadow">
+                    <div key={nc.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2 shadow-2xs hover:shadow-xs transition-shadow relative">
                       <div className="flex items-center justify-between text-xs text-slate-400">
                         <span className="font-bold text-[#A27B2B]">새가족 등록</span>
-                        <span>{nc.date}</span>
+                        <div className="flex items-center gap-2">
+                          <span>{nc.date}</span>
+                          {isAdminAuthenticated && (
+                            <button
+                              onClick={() => handleDeleteNewcomer(nc.id)}
+                              className="text-slate-400 hover:text-rose-600 p-0.5 cursor-pointer"
+                              title="삭제"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <h3 className="font-extrabold text-lg text-slate-900">{nc.name}</h3>
                       <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{nc.desc}</p>
@@ -568,7 +758,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 5. 2026 비전 및 표어 */}
+            {/* 7. 2026 비전 및 표어 */}
             {currentSubMenuId === 'vision-slogan' && (
               <div className="space-y-6">
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">2026 비전 및 표어</h1>
@@ -598,7 +788,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 6. 섬기는 분들 */}
+            {/* 8. 섬기는 분들 */}
             {currentSubMenuId === 'church-leaders' && (
               <div className="space-y-8">
                 <div>
@@ -630,7 +820,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 7. 예배 시간표 그리드 */}
+            {/* 9. 예배 시간표 그리드 */}
             {currentSubMenuId === 'worship-table-grid' && (
               <div className="space-y-6">
                 <div>
@@ -663,7 +853,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 8. 온라인 헌금 계좌 */}
+            {/* 10. 온라인 헌금 계좌 */}
             {currentSubMenuId === 'offering-grid' && (
               <div className="space-y-6">
                 <div>
@@ -693,7 +883,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 9. 오시는 길 */}
+            {/* 11. 오시는 길 */}
             {currentSubMenuId === 'map-location' && (
               <div className="space-y-6">
                 <div>
@@ -727,29 +917,41 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 10. 일반 게시판 글 상세보기 */}
+            {/* 12. 일반 게시판 글 상세보기 (+ 관리자 삭제 버튼) */}
             {selectedPost && (
               <div className="space-y-6">
-                <div className="pb-4 border-b border-slate-200">
-                  <button
-                    onClick={() => setSelectedPost(null)}
-                    className="text-xs font-bold text-slate-500 hover:text-slate-900 inline-flex items-center gap-1 mb-3 cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>목록으로 돌아가기</span>
-                  </button>
-                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{selectedPost.title}</h1>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2">
-                    <span>작성자: <strong>{selectedPost.author}</strong></span>
-                    <span>|</span>
-                    <span>날짜: {selectedPost.date}</span>
-                    {selectedPost.scripture && (
-                      <>
-                        <span>|</span>
-                        <span>본문: <strong className="text-amber-800">{selectedPost.scripture}</strong></span>
-                      </>
-                    )}
+                <div className="pb-4 border-b border-slate-200 flex items-start justify-between">
+                  <div>
+                    <button
+                      onClick={() => setSelectedPost(null)}
+                      className="text-xs font-bold text-slate-500 hover:text-slate-900 inline-flex items-center gap-1 mb-3 cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>목록으로 돌아가기</span>
+                    </button>
+                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{selectedPost.title}</h1>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2">
+                      <span>작성자: <strong>{selectedPost.author}</strong></span>
+                      <span>|</span>
+                      <span>날짜: {selectedPost.date}</span>
+                      {selectedPost.scripture && (
+                        <>
+                          <span>|</span>
+                          <span>본문: <strong className="text-amber-800">{selectedPost.scripture}</strong></span>
+                        </>
+                      )}
+                    </div>
                   </div>
+
+                  {isAdminAuthenticated && (
+                    <button
+                      onClick={() => handleDeletePost(selectedPost.id)}
+                      className="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>게시글 삭제</span>
+                    </button>
+                  )}
                 </div>
 
                 {selectedPost.youtubeId && (
@@ -779,16 +981,25 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 11. 일반 게시판 목록 화면 */}
+            {/* 13. 일반 게시판 목록 화면 (+ 관리자 빠른 삭제 지원) */}
             {!selectedPost && [
               'sunday-sermon', 'wednesday-sermon', 'friday-sermon', 'evening-prayer',
               'cell-couple', 'cell-young', 'ministry-team', 'mission-local'
             ].includes(currentSubMenuId) && (
               <div className="space-y-6">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+                <div className="flex items-center justify-between">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                     {currentSubMenu.name}
                   </h1>
+                  {isAdminAuthenticated && (
+                    <button
+                      onClick={() => setIsAdminOpen(true)}
+                      className="px-3.5 py-1.5 rounded-lg bg-[#C49A45] text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>글 작성</span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pb-4 border-b border-slate-200">
@@ -813,13 +1024,14 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                         <th className="py-3 px-3 text-center w-24">작성자</th>
                         <th className="py-3 px-3 text-center w-24">날짜</th>
                         <th className="py-3 px-3 text-center w-16 hidden sm:table-cell">조회</th>
+                        {isAdminAuthenticated && <th className="py-3 px-3 text-center w-16">관리</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredList.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="py-12 text-center text-slate-400 text-xs">
-                            등록된 게시글이 없습니다. 우측 상단 관리자 모드에서 글을 등록해 주세요.
+                          <td colSpan={isAdminAuthenticated ? 6 : 5} className="py-12 text-center text-slate-400 text-xs">
+                            등록된 게시글이 없습니다. 우측 상단 글 작성 버튼으로 등록해 주세요.
                           </td>
                         </tr>
                       ) : (
@@ -836,6 +1048,17 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                             <td className="py-3.5 px-3 text-center text-slate-500">{post.author}</td>
                             <td className="py-3.5 px-3 text-center text-slate-400 font-mono text-xs">{post.date}</td>
                             <td className="py-3.5 px-3 text-center text-slate-400 font-mono text-xs hidden sm:table-cell">{post.views}</td>
+                            {isAdminAuthenticated && (
+                              <td className="py-3.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  onClick={(e) => handleDeletePost(post.id, e)}
+                                  className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                  title="삭제"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         ))
                       )}
@@ -847,7 +1070,9 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
           </main>
         </div>
 
-        {/* 관리자 글쓰기 모달 */}
+        {/* ========================================================= */}
+        {/* 관리자 글/사진 등록 모달                                   */}
+        {/* ========================================================= */}
         {isAdminOpen && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
@@ -881,7 +1106,44 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                 </div>
               ) : (
                 <form onSubmit={handleAdminSubmit} className="space-y-3 max-h-[75vh] overflow-y-auto pr-1">
-                  {currentSubMenuId === 'newcomers-intro' ? (
+                  {/* A. 갤러리 폼 */}
+                  {currentSubMenuId === 'church-gallery' ? (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">앨범 / 행사 제목</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="예: 2026 전교인 가을 야외 수련회"
+                          value={newGalleryTitle}
+                          onChange={(e) => setNewGalleryTitle(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">사진 이미지 URL</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="https://images.unsplash.com/..."
+                          value={newGalleryImage}
+                          onChange={(e) => setNewGalleryImage(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">설명 (선택)</label>
+                        <textarea
+                          rows={3}
+                          placeholder="사진에 대한 설명을 간단히 입력해 주세요."
+                          value={newGalleryDesc}
+                          onChange={(e) => setNewGalleryDesc(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm resize-none"
+                        />
+                      </div>
+                    </>
+                  ) : currentSubMenuId === 'newcomers-intro' ? (
+                    /* B. 새가족 폼 */
                     <>
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">새가족 성함 / 가정명</label>
@@ -906,6 +1168,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                       </div>
                     </>
                   ) : (
+                    /* C. 일반 게시판 / 설교 폼 */
                     <>
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">등록할 카테고리</label>
@@ -921,7 +1184,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                           <option value="cell-couple">부부·가정 목장</option>
                           <option value="cell-young">청년·직장 목장</option>
                           <option value="ministry">사역부서 안내</option>
-                          <option value="mission">선교 및 구제</option>
+                          <option value="mission">선교 및 지역 구제</option>
                         </select>
                       </div>
 
