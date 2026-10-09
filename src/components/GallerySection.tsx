@@ -60,7 +60,7 @@ export const GallerySection: React.FC = () => {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
   const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState('worship');
+  const [newCategory, setNewCategory] = useState('fellowship');
   const [newImageUrl, setNewImageUrl] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,7 +93,7 @@ export const GallerySection: React.FC = () => {
     }
   };
 
-  // 사진 링크 등록 (Firestore addDoc - 파일 용량 제한 없이 0.5초 만에 등록 완료)
+  // 사진 링크 등록 (Firestore addDoc)
   const handleLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newImageUrl.trim()) {
@@ -212,9 +212,11 @@ export const GallerySection: React.FC = () => {
             >
               <div>
                 <div className="aspect-[4/3] bg-slate-100 overflow-hidden relative">
+                  {/* referrerPolicy 추가로 네이버 블로그 등 외부 이미지 차단 우회 */}
                   <img
                     src={item.imageUrl}
                     alt={item.title}
+                    referrerPolicy="no-referrer"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
@@ -225,6 +227,7 @@ export const GallerySection: React.FC = () => {
                     </span>
                   </div>
 
+                  {/* 관리자 삭제 버튼 */}
                   {isAdminAuthenticated && (
                     <button
                       onClick={(e) => handleDeletePhoto(item.id, e)}
@@ -281,6 +284,7 @@ export const GallerySection: React.FC = () => {
                 <img
                   src={selectedPhoto.imageUrl}
                   alt={selectedPhoto.title}
+                  referrerPolicy="no-referrer"
                   className="max-h-[65vh] w-auto max-w-full object-contain"
                 />
               </div>
@@ -292,7 +296,7 @@ export const GallerySection: React.FC = () => {
           </div>
         )}
 
-        {/* 2. 링크 등록 관리자 모달 (용량 걱정 없이 0초 등록) */}
+        {/* 2. 링크 등록 관리자 모달 */}
         {isAdminOpen && (
           <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4 animate-in fade-in duration-150">
             <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
@@ -333,9 +337,9 @@ export const GallerySection: React.FC = () => {
                       onChange={(e) => setNewCategory(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
                     >
+                      <option value="fellowship">친교·봉사</option>
                       <option value="worship">예배·찬양</option>
                       <option value="nextgen">다음세대</option>
-                      <option value="fellowship">친교·봉사</option>
                       <option value="mission">성전 전경</option>
                     </select>
                   </div>
@@ -345,7 +349,7 @@ export const GallerySection: React.FC = () => {
                     <input
                       type="text"
                       required
-                      placeholder="예: 2026 전교인 큐티 나눔 축제"
+                      placeholder="예: 2026 추석 청년 목장 모임"
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
@@ -359,13 +363,13 @@ export const GallerySection: React.FC = () => {
                     <input
                       type="url"
                       required
-                      placeholder="https://... (네이버 블로그, 구글, 외부 링크 붙여넣기)"
+                      placeholder="https://... (네이버 블로그 사진 우클릭 '이미지 주소 복사')"
                       value={newImageUrl}
                       onChange={(e) => setNewImageUrl(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
                     />
                     <p className="text-[11px] text-slate-400 mt-1">
-                      * 네이버 블로그/카페 사진 우클릭 후 <strong>'이미지 주소 복사'</strong>를 붙여넣으면 고화질로 즉시 연동됩니다.
+                      * <strong>주의</strong>: 블로그 글 주소(`blog.naver.com/...`)가 아니라, 블로그 본문 사진 위에서 마우스 우클릭 후 <strong>'이미지 주소 복사'</strong>를 눌러 나오는 링크(`postfiles.pstatic.net/...`)를 넣으셔야 합니다!
                     </p>
                   </div>
 
