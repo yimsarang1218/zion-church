@@ -4,7 +4,7 @@ import {
   User, Plus, Lock, Check, Video, Volume2, MapPin, 
   CreditCard, BookOpen, Heart, Sparkles, Navigation, Copy
 } from 'lucide-react';
-import { CHURCH_INFO, BANK_ACCOUNTS } from '../data/churchData';
+import { CHURCH_INFO } from '../data/churchData';
 
 interface SubPageLayoutProps {
   initialSectionId: string;
@@ -77,13 +77,13 @@ const INITIAL_POSTS: PostItem[] = [
   },
 ];
 
-// 2. 새가족 소개 초기 데이터 (사진 없이 텍스트 카드)
+// 2. 새가족 소개 초기 데이터 (사진 제외, 텍스트 카드)
 const INITIAL_NEWCOMERS = [
   { id: 'n1', name: '김성민 성도 가정', date: '2026.10.11', desc: '1목장 배정 | 주님의 이름으로 축복하고 환영합니다.' },
   { id: 'n2', name: '이수진 청년', date: '2026.10.04', desc: '청년목장 배정 | 믿음의 동역자로 함께 걷습니다.' },
 ];
 
-// 3. 섬기는 분들 데이터 (불필요한 직무 설명 삭제)
+// 3. 섬기는 분들 데이터 (설명 문구 제외)
 const CHURCH_STAFF = [
   { group: '교역자', role: '담임목사', name: '채준희' },
   { group: '교역자', role: '동사목사', name: '임사랑' },
@@ -211,7 +211,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
     return posts.filter(p => p.category === cat && p.title.toLowerCase().includes(searchKeyword.toLowerCase()));
   };
 
-  // 관리자 로그인 확인
+  // 관리자 인증
   const handleAdminAuth = () => {
     if (adminPassword.trim() === 'zion1218') {
       setIsAdminAuthenticated(true);
@@ -478,7 +478,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 4. 새가족 소개 (사진 없이 단정한 텍스트 카드) */}
+            {/* 4. 새가족 소개 (텍스트 카드) */}
             {currentSubMenuId === 'newcomers-intro' && (
               <div className="space-y-6">
                 <div>
@@ -516,4 +516,64 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
                   <div className="p-5 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
-                    <h3 className="font-bold text-slate-9
+                    <h3 className="font-bold text-slate-900">01. 복음의 본질</h3>
+                    <p className="text-xs text-slate-600 leading-relaxed">내 의와 공로가 아닌 오직 십자가 예수 그리스도의 구속 은혜를 붙듭니다.</p>
+                  </div>
+                  <div className="p-5 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+                    <h3 className="font-bold text-slate-900">02. 수용과 안식</h3>
+                    <p className="text-xs text-slate-600 leading-relaxed">판단과 정죄 대신 연약함을 있는 그대로 품고 참된 쉼을 누립니다.</p>
+                  </div>
+                  <div className="p-5 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+                    <h3 className="font-bold text-slate-900">03. 죄 고백과 회복</h3>
+                    <p className="text-xs text-slate-600 leading-relaxed">내 죄를 보고 솔직하게 직면할 때 참된 가정과 공동체의 회복이 시작됩니다.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 6. 섬기는 분들 */}
+            {currentSubMenuId === 'church-leaders' && (
+              <div className="space-y-8">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">섬기는 분들</h1>
+                  <p className="text-xs sm:text-sm text-slate-500">시온성교회를 기쁨과 기도로 섬기는 교역자 및 당회원입니다.</p>
+                </div>
+                
+                {['교역자', '시무장로', '원로·명예·은퇴장로'].map((groupName) => (
+                  <div key={groupName} className="space-y-4">
+                    <h3 className="text-base font-bold text-slate-900 pb-2 border-b border-slate-200 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#C49A45]" />
+                      <span>{groupName}</span>
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                      {CHURCH_STAFF.filter(s => s.group === groupName).map((staff, idx) => (
+                        <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 flex items-center gap-3.5 hover:shadow-xs transition-shadow">
+                          <div className="w-12 h-12 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm shrink-0 border border-slate-300">
+                            {staff.name.slice(0, 1)}
+                          </div>
+                          <div>
+                            <span className="text-[11px] font-bold text-[#A27B2B] block">{staff.role}</span>
+                            <strong className="text-base text-slate-900 block">{staff.name}</strong>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 7. 예배 시간표 그리드 */}
+            {currentSubMenuId === 'worship-table-grid' && (
+              <div className="space-y-6">
+                <div>
+                  <span className="text-xs font-bold text-[#C49A45] tracking-widest uppercase block mb-1">WORSHIP SCHEDULE</span>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">01 예배와 모임 안내</h1>
+                  <p className="text-xs text-slate-500 mt-1">영과 진리로 드려지는 은혜와 회복의 예배</p>
+                </div>
+
+                <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+                  <table className="w-full text-xs sm:text-sm text-left">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                      <tr>
+                        <th className="p-3.5 sm
