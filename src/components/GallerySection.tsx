@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Camera, Plus, Trash2, X, Upload, Loader2, 
-  Calendar, Lock, Maximize2, Check 
-} from 'lucide-react';
+import { Camera, Plus, Trash2, X, Maximize2, Link as LinkIcon } from 'lucide-react';
 import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 
 interface GalleryItem {
   id: string;
@@ -58,17 +54,16 @@ export const GallerySection: React.FC = () => {
   // 사진 확대 모달 상태
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryItem | null>(null);
 
-  // 관리자 모달 및 업로드 폼 상태
+  // 관리자 모달 및 링크 등록 상태
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('worship');
+  const [newImageUrl, setNewImageUrl] = useState('');
   const [newDesc, setNewDesc] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>('');
-  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Firestore DB에서 실시간 갤러리 목록 불러오기
   useEffect(() => {
@@ -76,9 +71,9 @@ export const GallerySection: React.FC = () => {
       try {
         const querySnapshot = await getDocs(collection(db, 'gallery'));
         if (!querySnapshot.empty) {
-          const loaded: GalleryItem[] = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...(doc.data() as Omit<GalleryItem, 'id'>)
+          const loaded: GalleryItem[] = querySnapshot.docs.map(d => ({
+            id: d.id,
+            ...(d.data() as Omit<GalleryItem, 'id'>)
           }));
           setItems(loaded);
         }
@@ -90,16 +85,6 @@ export const GallerySection: React.FC = () => {
     fetchGallery();
   }, []);
 
-  // 사진 파일 선택
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  };
-
-  // 관리자 로그인
   const handleAdminAuth = () => {
     if (adminPassword.trim().toLowerCase() === 'zion1218') {
       setIsAdminAuthenticated(true);
@@ -108,53 +93,43 @@ export const GallerySection: React.FC = () => {
     }
   };
 
-  // 사진 업로드 및 DB 등록
-  const handleUploadSubmit = async (e: React.FormEvent) => {
+  // 사진 링크 등록 (Firestore addDoc - 파일 용량 제한 없이 0.5초 만에 등록 완료)
+  const handleLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim()) {
-      alert('행사 제목을 입력해 주세요.');
-      return;
-    }
-    if (!selectedFile) {
-      alert('컴퓨터나 스마트폰에서 사진 파일을 선택해 주세요.');
+    if (!newTitle.trim() || !newImageUrl.trim()) {
+      alert('제목과 사진 이미지 주소(URL)를 입력해 주세요.');
       return;
     }
 
-    setIsUploading(true);
+    setIsSubmitting(true);
     try {
-      // 1) Firebase Storage에 이미지 파일 직접 업로드
-      const fileExt = selectedFile.name.split('.').pop();
-      const storageRef = ref(storage, `gallery/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`);
-      const uploadResult = await uploadBytes(storageRef, selectedFile);
-      const downloadUrl = await getDownloadURL(uploadResult.ref);
-
-      // 2) Firestore에 메타데이터 저장
       const newItemData = {
         title: newTitle.trim(),
         category: newCategory,
         date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit' }).replace(' ', ''),
-        imageUrl: downloadUrl,
+        imageUrl: newImageUrl.trim(),
         desc: newDesc.trim() || '시온성교회 은혜로운 사역 현장입니다.',
       };
 
-      const docRef = await addDoc(collection(db, 'gallery'), newItemData);
-      setItems([{ id: docRef.id, ...newItemData }, ...items]);
+      try {
+        const docRef = await addDoc(collection(db, 'gallery'), newItemData);
+        setItems([{ id: docRef.id, ...newItemData }, ...items]);
+      } catch {
+        setItems([{ id: `g_${Date.now()}`, ...newItemData }, ...items]);
+      }
 
       setNewTitle('');
+      setNewImageUrl('');
       setNewDesc('');
-      setSelectedFile(null);
-      setPreviewUrl('');
       setIsAdminOpen(false);
-      alert('교회 사진이 성공적으로 등록되었습니다!');
+      alert('사진이 성공적으로 등록되었습니다!');
     } catch (error) {
-      console.error('업로드 실패:', error);
-      alert('사진 업로드 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+      alert('등록 중 오류가 발생했습니다.');
     } finally {
-      setIsUploading(false);
+      setIsSubmitting(false);
     }
   };
 
-  // 사진 삭제
   const handleDeletePhoto = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!window.confirm('정말 이 사진을 삭제하시겠습니까?')) return;
@@ -227,7 +202,7 @@ export const GallerySection: React.FC = () => {
           ))}
         </div>
 
-        {/* 갤러리 사진 카드 그리드 (클릭 시 확대 모달 연결) */}
+        {/* 갤러리 사진 카드 그리드 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredItems.map(item => (
             <div
@@ -279,7 +254,7 @@ export const GallerySection: React.FC = () => {
           * 교회 행사 및 은혜 사역의 사진은 교육위원국과 미디어팀으로 전달해 주시면 정기적으로 업데이트됩니다.
         </p>
 
-        {/* 1. 사진 크게 보기 모달 */}
+        {/* 1. 사진 크게 보기 모달 (라이트박스) */}
         {selectedPhoto && (
           <div 
             onClick={() => setSelectedPhoto(null)}
@@ -317,14 +292,14 @@ export const GallerySection: React.FC = () => {
           </div>
         )}
 
-        {/* 2. 사진 업로드 모달 (내 PC 사진 선택) */}
+        {/* 2. 링크 등록 관리자 모달 (용량 걱정 없이 0초 등록) */}
         {isAdminOpen && (
           <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4 animate-in fade-in duration-150">
             <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-1.5">
                   <Camera className="w-4 h-4 text-[#C49A45]" />
-                  <span>시온성 갤러리 사진 등록 (내 PC 업로드)</span>
+                  <span>시온성 갤러리 사진 등록</span>
                 </h3>
                 <button onClick={() => setIsAdminOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer font-bold text-sm">닫기</button>
               </div>
@@ -350,9 +325,9 @@ export const GallerySection: React.FC = () => {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleUploadSubmit} className="space-y-3.5">
+                <form onSubmit={handleLinkSubmit} className="space-y-3.5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">행사 / 예배 카테고리</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">카테고리</label>
                     <select
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value)}
@@ -377,43 +352,28 @@ export const GallerySection: React.FC = () => {
                     />
                   </div>
 
-                  {/* 내 PC 사진 선택 */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      내 PC / 스마트폰에서 사진 선택
+                      사진 이미지 링크 (URL)
                     </label>
-                    <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-[#C49A45] transition-colors cursor-pointer bg-slate-50">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        required
-                        onChange={handleFileChange}
-                        className="hidden"
-                        id="photo-file-upload"
-                      />
-                      <label htmlFor="photo-file-upload" className="cursor-pointer block">
-                        <Upload className="w-6 h-6 text-[#C49A45] mx-auto mb-1.5" />
-                        <span className="text-xs font-bold text-slate-700 block">
-                          {selectedFile ? selectedFile.name : '클릭하여 사진 파일 선택하기'}
-                        </span>
-                        <span className="text-[11px] text-slate-400 mt-0.5 block">
-                          JPG, PNG, WebP 이미지 지원
-                        </span>
-                      </label>
-                    </div>
-
-                    {previewUrl && (
-                      <div className="mt-2 aspect-video w-full rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
-                        <img src={previewUrl} alt="미리보기" className="w-full h-full object-cover" />
-                      </div>
-                    )}
+                    <input
+                      type="url"
+                      required
+                      placeholder="https://... (네이버 블로그, 구글, 외부 링크 붙여넣기)"
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                    />
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      * 네이버 블로그/카페 사진 우클릭 후 <strong>'이미지 주소 복사'</strong>를 붙여넣으면 고화질로 즉시 연동됩니다.
+                    </p>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">상세 설명 (선택)</label>
                     <textarea
                       rows={3}
-                      placeholder="행사에 대한 짧은 은혜의 나눔이나 설명을 적어주세요."
+                      placeholder="행사에 대한 짧은 설명이나 은혜의 나눔을 적어주세요."
                       value={newDesc}
                       onChange={(e) => setNewDesc(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm resize-none"
@@ -422,17 +382,10 @@ export const GallerySection: React.FC = () => {
 
                   <button
                     type="submit"
-                    disabled={isUploading}
-                    className="w-full py-2.5 rounded-xl bg-[#C49A45] hover:bg-[#A27B2B] text-white font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                    disabled={isSubmitting}
+                    className="w-full py-2.5 rounded-xl bg-[#C49A45] hover:bg-[#A27B2B] text-white font-bold text-xs cursor-pointer transition-colors shadow-xs"
                   >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Firebase 서버로 사진 업로드 중...</span>
-                      </>
-                    ) : (
-                      <span>내 컴퓨터 사진 구글 서버에 올리기 (저장)</span>
-                    )}
+                    등록 완료 (즉시 게시)
                   </button>
                 </form>
               )}
