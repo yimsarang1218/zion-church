@@ -83,7 +83,7 @@ const INITIAL_NEWCOMERS = [
   { id: 'n2', name: '이수진 청년', date: '2026.10.04', desc: '청년목장 배정 | 믿음의 동역자로 함께 걷습니다.' },
 ];
 
-// 3. 섬기는 분들 데이터 (설명 문구 제외)
+// 3. 섬기는 분들 데이터
 const CHURCH_STAFF = [
   { group: '교역자', role: '담임목사', name: '채준희' },
   { group: '교역자', role: '동사목사', name: '임사랑' },
@@ -196,7 +196,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
     setCurrentSubMenuId(menu.id);
   };
 
-  // 현재 메뉴에 맞는 게시글 필터링
   const getFilteredPosts = () => {
     let cat = 'sunday';
     if (currentSubMenuId === 'sunday-sermon') cat = 'sunday';
@@ -211,7 +210,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
     return posts.filter(p => p.category === cat && p.title.toLowerCase().includes(searchKeyword.toLowerCase()));
   };
 
-  // 관리자 인증
   const handleAdminAuth = () => {
     if (adminPassword.trim() === 'zion1218') {
       setIsAdminAuthenticated(true);
@@ -220,7 +218,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
     }
   };
 
-  // 관리자 게시글 등록
   const handleAdminSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (currentSubMenuId === 'newcomers-intro') {
@@ -563,7 +560,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 7. 예배 시간표 그리드 */}
+            {/* 7. 예배 시간표 그리드 (에러 수정된 테이블 구역) */}
             {currentSubMenuId === 'worship-table-grid' && (
               <div className="space-y-6">
                 <div>
@@ -576,4 +573,41 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                   <table className="w-full text-xs sm:text-sm text-left">
                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
                       <tr>
-                        <th className="p-3.5 sm
+                        <th className="p-3.5 sm:p-4">예배 및 모임명</th>
+                        <th className="p-3.5 sm:p-4">시간</th>
+                        <th className="p-3.5 sm:p-4">장소</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">주일 1부 예배</td><td className="p-3.5 sm:p-4 text-amber-700 font-semibold">주일 오전 10:00</td><td className="p-3.5 sm:p-4">본당 대예배실</td></tr>
+                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">주일 2부 예배</td><td className="p-3.5 sm:p-4 text-amber-700 font-semibold">주일 오전 11:20</td><td className="p-3.5 sm:p-4">본당 대예배실</td></tr>
+                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">다음세대 예배 (큐티스쿨)</td><td className="p-3.5 sm:p-4">주일 오후 12:00</td><td className="p-3.5 sm:p-4">3층 소예배실</td></tr>
+                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">주일 양육반 (10주 과정)</td><td className="p-3.5 sm:p-4">주일 오후 01:00</td><td className="p-3.5 sm:p-4">각 교육실</td></tr>
+                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">목장 모임 (소그룹 나눔)</td><td className="p-3.5 sm:p-4">주일 오후 02:30</td><td className="p-3.5 sm:p-4">각 목장 처소</td></tr>
+                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">수요 행복예배</td><td className="p-3.5 sm:p-4 text-amber-700 font-semibold">매주 수요일 저녁 8:00</td><td className="p-3.5 sm:p-4">본당 대예배실</td></tr>
+                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">금요 기도회</td><td className="p-3.5 sm:p-4 text-amber-700 font-semibold">매주 금요일 밤 8:00</td><td className="p-3.5 sm:p-4">본당 대예배실</td></tr>
+                      <tr><td className="p-3.5 sm:p-4 font-bold text-slate-900">화목 기도회</td><td className="p-3.5 sm:p-4">화·목 저녁 밤 8:00</td><td className="p-3.5 sm:p-4">본당 대예배실</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* 8. 온라인 헌금 계좌 */}
+            {currentSubMenuId === 'offering-grid' && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">온라인 헌금 계좌</h1>
+                  <p className="text-xs sm:text-sm text-slate-500">기쁨과 감사함으로 드리는 거룩한 물질의 헌신입니다.</p>
+                </div>
+
+                <div className="p-6 sm:p-8 rounded-2xl bg-slate-50 border border-slate-200 max-w-lg space-y-4">
+                  <div className="flex items-center gap-2 text-slate-900 font-bold">
+                    <CreditCard className="w-5 h-5 text-[#C49A45]" />
+                    <span>신협 (교회 공식계좌)</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-500 block mb-1">예금주: 대한예수교장로회 시온성교회</span>
+                    <strong className="text-2xl sm:text-3xl font-black font-mono text-[#A27B2B] tracking-tight block">
+                      131-020-284906
+                    </strong>
