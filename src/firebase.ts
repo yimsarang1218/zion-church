@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 // 캡처 화면 속 임사랑 님 프로젝트의 고유 Firebase 설정값
@@ -18,6 +19,9 @@ export const app = initializeApp(firebaseConfig);
 
 // 방문자 수 및 게시판용 Firestore 데이터베이스 인스턴스
 export const db = getFirestore(app);
+
+// 실제 사진 파일 저장을 위한 Firebase Storage 인스턴스
+export const storage = getStorage(app);
 
 // 브라우저 환경에서만 애널리틱스 지원 확인 후 초기화
 export const analytics = typeof window !== "undefined" 
