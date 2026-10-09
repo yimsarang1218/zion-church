@@ -236,7 +236,7 @@ export const BulletinModal: React.FC<BulletinModalProps> = ({ isOpen, onClose })
                       <div><strong>교회 소식:</strong> 광고 | 환영 | 축하</div>
                       <div><strong>성경 봉독:</strong> 창세기 35장 1~3절</div>
                       <div><strong>말씀 선포:</strong> <span className="text-amber-800 font-bold">‘다시 부르시는 은혜’</span> (담임목사)</div>
-                      <div><strong>헌금 기도:</strong> 이덕권 안수집사 | <strong>축도:</strong> 담임목사</div>
+                      <div><strong>헌금 기도:</strong> 허덕권 안수집사 | <strong>축도:</strong> 담임목사</div>
                     </div>
                   </div>
 
