@@ -18,10 +18,10 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
 
   const menuItems = [
     { id: 'worship', label: '01 예배와 말씀', defaultSub: 'sunday-sermon' },
-    { id: 'qt', label: '02 날마다 큐티', defaultSub: 'qtin-guide' },
-    { id: 'community', label: '03 공동체와 양육', defaultSub: 'sarangbang' },
-    { id: 'ministry', label: '04 사역과 선교', defaultSub: 'ministry-intro' },
-    { id: 'newfamily', label: '05 새가족 안내', defaultSub: 'welcome-greeting' },
+    { id: 'qt', label: '02 날마다 큐티', defaultSub: 'qt-guide' },
+    { id: 'community', label: '03 공동체와 양육', defaultSub: 'cell-couple' },
+    { id: 'ministry', label: '04 사역과 선교', defaultSub: 'ministry-team' },
+    { id: 'newfamily', label: '05 새가족 안내', defaultSub: 'newfamily-welcome' },
     { id: 'about', label: '06 교회소개', defaultSub: 'vision-slogan' },
   ];
 
@@ -29,7 +29,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
         
-        {/* 방금 public에 업로드한 시온성교회 공식 완성형 로고 이미지 */}
+        {/* 시온성교회 공식 로고 이미지 */}
         <button 
           onClick={onGoHome} 
           className="flex items-center cursor-pointer group focus:outline-none"
