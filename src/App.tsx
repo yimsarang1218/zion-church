@@ -24,9 +24,11 @@ export default function App() {
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isBulletinOpen, setIsBulletinOpen] = useState(false);
   const [isPrayerOpen, setIsPrayerOpen] = useState(false);
+
+  // 관리자 대시보드 상태
   const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
 
-  // 주소창 #admin 감지
+  // URL 해시 및 파라미터 감지 (#admin 등)
   useEffect(() => {
     const checkAdminRoute = () => {
       const hash = window.location.hash;
@@ -43,7 +45,7 @@ export default function App() {
     return () => window.removeEventListener('hashchange', checkAdminRoute);
   }, []);
 
-  // 로고 클릭 시 메인 홈 복귀
+  // 메인 홈으로 이동 (로고 클릭 등)
   const handleGoHome = () => {
     setViewMode('main');
     setIsMegaMenuOpen(false);
@@ -51,13 +53,14 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 대분류 직접 이동 (상단 01~06 메뉴 클릭 시)
+  // 핵심 라우터: 섹션 ID와 하위 메뉴 ID를 받아 SubPageLayout으로 정확히 화면 전환
   const handleNavigateSection = (sectionId: string, subMenuId?: string) => {
     setCurrentSectionId(sectionId);
 
     if (subMenuId) {
       setCurrentSubMenuId(subMenuId);
     } else {
+      // 대분류 클릭 시 기본 첫 번째 하위 탭 지정
       if (sectionId === 'worship') setCurrentSubMenuId('sunday-sermon');
       else if (sectionId === 'qt') setCurrentSubMenuId('qtin-guide');
       else if (sectionId === 'community') setCurrentSubMenuId('sarangbang');
@@ -67,41 +70,13 @@ export default function App() {
     }
 
     setIsMegaMenuOpen(false);
-    setViewMode('subpage');
+    setViewMode('subpage'); // 서브페이지 활성화
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 3단 메뉴(MegaMenuOverlay)의 세부 항목 ID를 올바른 섹션으로 1:1 자동 라우팅
-  const handleMegaMenuClick = (menuKey: string) => {
-    let targetSection = 'about';
-    let targetSub = menuKey;
-
-    // 01 예배와 말씀
-    if (['sunday-sermon', 'wednesday-worship', 'friday-worship', 'tue-thu-prayer'].includes(menuKey)) {
-      targetSection = 'worship';
-    }
-    // 02 날마다 큐티
-    else if (['qtin-guide', 'daily-meditation', 'nextgen-qt', 'bulletin-view'].includes(menuKey)) {
-      targetSection = 'qt';
-    }
-    // 03 공동체와 양육
-    else if (['sarangbang', 'group-types', 'discipleship', 'intercessory-prayer'].includes(menuKey)) {
-      targetSection = 'community';
-    }
-    // 04 사역과 선교
-    else if (['ministry-intro', 'qt-school', 'mission-relief', 'ministry-gallery'].includes(menuKey)) {
-      targetSection = 'ministry';
-    }
-    // 05 새가족 안내
-    else if (['welcome-greeting', 'four-week-course', 'shuttle-bus', 'consultation-inquiry'].includes(menuKey)) {
-      targetSection = 'newfamily';
-    }
-    // 06 교회소개
-    else {
-      targetSection = 'about';
-    }
-
-    handleNavigateSection(targetSection, targetSub);
+  // 3단 메뉴(MegaMenuOverlay)의 항목 클릭 시 매핑
+  const handleMegaMenuClick = (sectionId: string, subMenuId?: string) => {
+    handleNavigateSection(sectionId, subMenuId);
   };
 
   return (
@@ -112,7 +87,7 @@ export default function App() {
         onOpenPrayer={() => setIsPrayerOpen(true)}
       />
 
-      {/* 2. 표준 네비게이션 헤더 */}
+      {/* 2. 네비게이션 헤더 (HeaderNav 규격과 100% 일치) */}
       <HeaderNav
         onOpenMegaMenu={() => setIsMegaMenuOpen(true)}
         onGoHome={handleGoHome}
@@ -120,20 +95,21 @@ export default function App() {
         onNavigateSubPage={handleNavigateSection}
       />
 
-      {/* 3. 3단 햄버거 메뉴 (사이트맵) */}
+      {/* 3. 전체 메뉴 오버레이 (3단 햄버거 메뉴) */}
       <MegaMenuOverlay
         isOpen={isMegaMenuOpen}
         onClose={() => setIsMegaMenuOpen(false)}
         onOpenBulletin={() => { setIsMegaMenuOpen(false); setIsBulletinOpen(true); }}
         onOpenPrayer={() => { setIsMegaMenuOpen(false); setIsPrayerOpen(true); }}
-        onOpenSubDetail={handleMegaMenuClick}
+        onOpenSubPage={handleMegaMenuClick}
         onNavigateSection={handleNavigateSection}
         onNavigateSubPage={handleNavigateSection}
       />
 
-      {/* 4. 메인 화면 vs 서브페이지 */}
+      {/* 4. 메인 화면 vs 서브페이지 전환 영역 */}
       <main className="flex-1">
         {viewMode === 'subpage' ? (
+          /* 기존 콘텐츠가 온전히 동작하는 서브페이지 */
           <SubPageLayout
             initialSectionId={currentSectionId}
             initialSubMenuId={currentSubMenuId}
@@ -142,32 +118,40 @@ export default function App() {
             onOpenPrayer={() => setIsPrayerOpen(true)}
           />
         ) : (
+          /* 메인 홈 랜딩 화면 */
           <>
+            {/* 메인 배너 */}
             <HeroBanner
               onOpenBulletin={() => setIsBulletinOpen(true)}
               onOpenPrayer={() => setIsPrayerOpen(true)}
             />
 
+            {/* 메인 4개 퀵 그리드 */}
             <MainQuickGrid
               onOpenBulletin={() => setIsBulletinOpen(true)}
               onOpenPrayer={() => setIsPrayerOpen(true)}
               onNavigateSection={handleNavigateSection}
             />
 
+            {/* 예배 시간표 표 */}
             <WorshipTableSection />
 
+            {/* 온라인 예배 및 말씀 다시보기 */}
             <OnlineWorshipSection
               onNavigateSection={handleNavigateSection}
             />
 
+            {/* 말씀 묵상 / 공동체 양육 / 사역과 선교 / 은혜소식 */}
             <CommunitySections
               onOpenBulletin={() => setIsBulletinOpen(true)}
               onOpenPrayer={() => setIsPrayerOpen(true)}
               onNavigateSection={handleNavigateSection}
             />
 
+            {/* 시온성 갤러리 */}
             <GallerySection />
 
+            {/* 오시는 길 & 온라인 헌금 계좌 */}
             <LocationAndOffering />
           </>
         )}
@@ -176,7 +160,7 @@ export default function App() {
       {/* 5. 포털 푸터 */}
       <PortalFooter onOpenAdmin={() => setIsAdminDashboardOpen(true)} />
 
-      {/* 6. 플로팅 액션 버튼 */}
+      {/* 6. 우측 하단 플로팅 액션 버튼 */}
       <FloatingActions onOpenPrayer={() => setIsPrayerOpen(true)} />
 
       {/* 7. 공통 모달 (주보, 중보기도) */}
@@ -194,7 +178,7 @@ export default function App() {
         />
       )}
 
-      {/* 8. 관리자 CMS 대시보드 */}
+      {/* 8. 관리자 통합 CMS 대시보드 */}
       <AdminDashboard
         isOpen={isAdminDashboardOpen}
         onClose={() => {
