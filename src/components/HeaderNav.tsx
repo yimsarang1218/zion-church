@@ -1,6 +1,5 @@
 import React from 'react';
 import { Menu, PlayCircle } from 'lucide-react';
-import { CHURCH_INFO } from '../data/churchData';
 
 interface HeaderNavProps {
   onOpenMegaMenu: () => void;
@@ -30,25 +29,19 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
         
-        {/* 선명하게 복원된 정식 로고 (이미지 깨짐 방지 텍스트 엠블럼) */}
+        {/* 방금 public에 업로드한 시온성교회 공식 완성형 로고 이미지 */}
         <button 
           onClick={onGoHome} 
-          className="flex items-center gap-3 text-left cursor-pointer group"
+          className="flex items-center cursor-pointer group focus:outline-none"
         >
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center font-black text-base sm:text-lg text-[#C49A45] shadow-xs group-hover:scale-105 transition-transform">
-            시온
-          </div>
-          <div className="flex flex-col">
-            <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight group-hover:text-[#C49A45] transition-colors">
-              하남 시온성교회
-            </span>
-            <span className="text-[10px] text-slate-400 font-mono tracking-wider">
-              ZION PRESBYTERIAN CHURCH
-            </span>
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="대한예수교장로회 하남 시온성교회" 
+            className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-102"
+          />
         </button>
 
-        {/* 상단 01~06 네비게이션 */}
+        {/* 데스크톱 상단 01~06 네비게이션 */}
         <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
           {menuItems.map((item) => (
             <button
@@ -61,7 +54,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           ))}
         </nav>
 
-        {/* 우측 액션: 온라인 예배 & 3단 햄버거 메뉴 */}
+        {/* 우측 온라인 예배 & 3단 전체 메뉴 버튼 */}
         <div className="flex items-center gap-2 sm:gap-3">
           <a
             href="https://www.youtube.com/@zionchurch"
