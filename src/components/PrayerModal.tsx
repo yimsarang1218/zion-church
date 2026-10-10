@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Send, MessageCircle, Heart, Phone, CheckCircle2 } from 'lucide-react';
-import { CHURCH_INFO } from '../data/churchData';
+import { X, Heart, Send, CheckCircle2, Lock, Loader2 } from 'lucide-react';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface PrayerModalProps {
   isOpen: boolean;
@@ -8,200 +9,174 @@ interface PrayerModalProps {
 }
 
 export const PrayerModal: React.FC<PrayerModalProps> = ({ isOpen, onClose }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    type: '기도제목',
-    message: '',
-  });
-  const [submitted, setSubmitted] = useState(false);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [category, setCategory] = useState<'중보기도' | '신앙상담' | '심방요청'>('신앙상담');
+  const [request, setRequest] = useState('');
+  const [isPrivate, setIsPrivate] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.message.trim()) return;
-    setSubmitted(true);
+    if (!name.trim() || !request.trim()) {
+      alert('성함과 상담/기도 내용을 입력해 주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Firebase Firestore 'prayers' 컬렉션에 실시간 영구 저장
+      await addDoc(collection(db, 'prayers'), {
+        name: name.trim(),
+        phone: phone.trim(),
+        category,
+        request: request.trim(),
+        isPrivate,
+        status: '접수대기',
+        createdAt: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
+        timestamp: serverTimestamp()
+      });
+
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error('상담/기도 접수 오류:', error);
+      alert('접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleReset = () => {
-    setSubmitted(false);
-    setFormData({
-      name: '',
-      phone: '',
-      type: '기도제목',
-      message: '',
-    });
+  const handleResetAndClose = () => {
+    setName('');
+    setPhone('');
+    setRequest('');
+    setIsSubmitted(false);
     onClose();
   };
 
-  const handleOpenKakaoTalk = () => {
-    // Open kakao consultation or search
-    window.open(CHURCH_INFO.kakaoTalkUrl, '_blank', 'noopener,noreferrer');
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200">
-        {/* Header */}
-        <div className="bg-[#1E3A5F] text-white p-5 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-[#C5A059]">
-              <Heart className="w-4 h-4 fill-[#C5A059]" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold">온라인 기도요청 & 상담</h3>
-              <p className="text-xs text-slate-300">목회자가 함께 눈물로 기도합니다</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label="닫기"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg overflow-hidden bg-white rounded-3xl shadow-2xl border border-slate-100">
+        
+        {/* 상단 닫기 */}
+        <button
+          onClick={handleResetAndClose}
+          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
-        {submitted ? (
-          <div className="p-8 text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+        {isSubmitted ? (
+          <div className="p-8 sm:p-10 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h4 className="text-lg font-bold text-slate-900">
-              기도요청이 정성껏 접수되었습니다
-            </h4>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-sm mx-auto">
-              보내주신 귀한 기도제목을 위해 담임목사님과 중보기도팀이 새벽마다 한마음으로 기도하겠습니다.
-              하나님의 크신 은혜와 평안이 늘 함께하시길 축복합니다.
+            <h3 className="text-xl font-black text-slate-900">상담 및 기도요청이 접수되었습니다</h3>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-sm mx-auto">
+              보내주신 소중한 기도제목과 상담 내용은 교역자실로 안전하게 전달되었습니다. 목양적 사랑과 기도로 함께 동행하겠습니다.
             </p>
-            <div className="pt-2">
-              <button
-                onClick={handleReset}
-                className="px-6 py-2.5 bg-[#1E3A5F] text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-[#152942] transition-colors cursor-pointer"
-              >
-                확인 및 닫기
-              </button>
-            </div>
+            <button
+              onClick={handleResetAndClose}
+              className="mt-4 px-6 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              확인 및 닫기
+            </button>
           </div>
         ) : (
-          <div className="p-6">
-            {/* Quick KakaoTalk & Telephone Callout */}
-            <div className="mb-5 p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-col gap-2.5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2 text-xs text-slate-800">
-                  <MessageCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-slate-900 block text-xs sm:text-sm">카카오톡 1:1 상담 ID</span>
-                    <span className="text-slate-600">
-                      카카오톡 ID : <strong className="text-amber-900 font-mono text-sm bg-amber-100/80 px-1.5 py-0.5 rounded font-bold">limsarang1218</strong>
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText('limsarang1218');
-                    alert('카카오톡 ID(limsarang1218)가 복사되었습니다. 카카오톡 친구추가에서 검색해 주세요.');
-                  }}
-                  className="shrink-0 px-2.5 py-1 rounded-md bg-[#FEE500] hover:bg-[#FADA0A] text-slate-900 font-bold text-xs shadow-xs transition-colors cursor-pointer"
-                >
-                  ID 복사
-                </button>
+          <div className="p-6 sm:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-[#C49A45] flex items-center justify-center border border-amber-500/20">
+                <Heart className="w-5 h-5" />
               </div>
-
-              <div className="pt-2 border-t border-amber-200/60 flex items-center justify-between text-xs">
-                <span className="text-slate-700">전화 상담 : <strong className="font-mono text-slate-900">010-2741-2938</strong></span>
-                <a
-                  href="tel:010-2741-2938"
-                  className="px-2.5 py-1 rounded-md bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors"
-                >
-                  전화걸기
-                </a>
+              <div>
+                <h3 className="text-lg font-black text-slate-900">온라인 신앙상담 및 중보기도</h3>
+                <p className="text-xs text-slate-500">혼자 아파하지 마시고 기도로 함께 나누어 주세요.</p>
               </div>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  성함 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="예: 홍길동"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-slate-800"
-                />
+              <div className="flex gap-2">
+                {(['신앙상담', '중보기도', '심방요청'] as const).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCategory(cat)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      category === cat
+                        ? 'bg-[#C49A45] text-white border-[#C49A45] shadow-xs'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    연락처 (선택)
-                  </label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">성함 / 직분</label>
                   <input
-                    type="tel"
-                    placeholder="010-0000-0000"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-slate-800"
+                    type="text"
+                    required
+                    placeholder="예: 홍길동 성도"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#C49A45]"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    구분
-                  </label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-slate-800 bg-white"
-                  >
-                    <option value="기도제목">중보 기도제목</option>
-                    <option value="신앙상담">신앙 / 고민 상담</option>
-                    <option value="심방요청">가정 / 병원 심방 요청</option>
-                    <option value="새가족">새가족 등록 문의</option>
-                  </select>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">연락처 (선택)</label>
+                  <input
+                    type="text"
+                    placeholder="010-0000-0000"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#C49A45]"
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  나누고 싶은 말씀 및 기도 내용 <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">상담 및 기도제목</label>
                 <textarea
                   required
                   rows={4}
-                  placeholder="나누고 싶으신 기도제목이나 문의 사항을 편안하게 남겨주세요. 내용은 철저하게 비밀이 보장됩니다."
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-slate-800 resize-none"
+                  placeholder="기도가 필요한 내용이나 나누고 싶은 신앙의 고민을 편안하게 적어주세요."
+                  value={request}
+                  onChange={(e) => setRequest(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#C49A45] resize-none"
                 />
               </div>
 
-              <div className="pt-2 flex items-center justify-between gap-3">
-                <a
-                  href={`tel:${CHURCH_INFO.phone}`}
-                  className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-[#1E3A5F]"
-                >
-                  <Phone className="w-3.5 h-3.5" />
-                  <span>전화 상담: {CHURCH_INFO.phone}</span>
-                </a>
-
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#1E3A5F] text-white text-xs sm:text-sm font-semibold hover:bg-[#152942] transition-colors cursor-pointer"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>기도제목 전송</span>
-                </button>
+              <div className="flex items-center gap-2 p-3 bg-amber-50/70 border border-amber-200/50 rounded-xl text-[11px] text-amber-900">
+                <Lock className="w-3.5 h-3.5 text-[#C49A45] shrink-0" />
+                <span>모든 상담과 기도제목은 교역자실 외에 외부에 일절 공개되지 않습니다.</span>
               </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>기도제목 전송 중...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>상담 및 기도요청 접수하기</span>
+                  </>
+                )}
+              </button>
             </form>
           </div>
         )}
+
       </div>
     </div>
   );
