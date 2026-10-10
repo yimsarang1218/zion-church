@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Menu, PlayCircle, BookOpen, Heart } from 'lucide-react';
+import React from 'react';
+import { Menu, PlayCircle } from 'lucide-react';
 import { CHURCH_INFO } from '../data/churchData';
 
 interface HeaderNavProps {
@@ -29,25 +29,26 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-        {/* 로고 영역 */}
+        
+        {/* 선명하게 복원된 정식 로고 (이미지 깨짐 방지 텍스트 엠블럼) */}
         <button 
           onClick={onGoHome} 
           className="flex items-center gap-3 text-left cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center font-black text-lg text-[#C49A45] shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center font-black text-base sm:text-lg text-[#C49A45] shadow-xs group-hover:scale-105 transition-transform">
             시온
           </div>
-          <div>
-            <span className="block text-base sm:text-lg font-black text-slate-900 tracking-tight group-hover:text-[#C49A45] transition-colors">
+          <div className="flex flex-col">
+            <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight group-hover:text-[#C49A45] transition-colors">
               하남 시온성교회
             </span>
-            <span className="block text-[10px] text-slate-400 font-mono tracking-wider">
+            <span className="text-[10px] text-slate-400 font-mono tracking-wider">
               ZION PRESBYTERIAN CHURCH
             </span>
           </div>
         </button>
 
-        {/* 데스크톱 상단 메뉴 바 */}
+        {/* 상단 01~06 네비게이션 */}
         <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
           {menuItems.map((item) => (
             <button
@@ -60,7 +61,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           ))}
         </nav>
 
-        {/* 우측 액션: 온라인 예배 & 3단 메뉴(햄버거 버튼) */}
+        {/* 우측 액션: 온라인 예배 & 3단 햄버거 메뉴 */}
         <div className="flex items-center gap-2 sm:gap-3">
           <a
             href="https://www.youtube.com/@zionchurch"
@@ -72,7 +73,6 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             <span>온라인 예배</span>
           </a>
 
-          {/* 3단 햄버거 전체 메뉴 버튼 */}
           <button
             onClick={onOpenMegaMenu}
             className="p-2 sm:p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
@@ -81,6 +81,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
+
       </div>
     </header>
   );
