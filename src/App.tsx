@@ -13,7 +13,6 @@ import { PortalFooter } from './components/PortalFooter';
 import { BulletinModal } from './components/BulletinModal';
 import { PrayerModal } from './components/PrayerModal';
 import { FloatingActions } from './components/FloatingActions';
-import { SubDetailModal, SubDetailType } from './components/SubDetailModal';
 import { SubPageLayout } from './components/SubPageLayout';
 import { AdminDashboard } from './components/AdminDashboard';
 
@@ -25,12 +24,11 @@ export default function App() {
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isBulletinOpen, setIsBulletinOpen] = useState(false);
   const [isPrayerOpen, setIsPrayerOpen] = useState(false);
-  const [activeSubDetail, setActiveSubDetail] = useState<SubDetailType | null>(null);
 
   // 관리자 대시보드 상태
   const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
 
-  // URL 해시 및 파라미터 감지 (#admin 등)
+  // 주소창 #admin 감지
   useEffect(() => {
     const checkAdminRoute = () => {
       const hash = window.location.hash;
@@ -47,21 +45,22 @@ export default function App() {
     return () => window.removeEventListener('hashchange', checkAdminRoute);
   }, []);
 
-  // 메인 홈으로 이동 (로고 클릭 등)
+  // 로고 클릭 -> 메인 홈으로 복귀
   const handleGoHome = () => {
     setViewMode('main');
+    setIsMegaMenuOpen(false);
     window.location.hash = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 핵심: 모든 서브메뉴/섹션 클릭을 완벽하게 SubPageLayout으로 연결
-  const handleNavigateSection = (sectionId: string, subMenuId?: string) => {
+  // 핵심: 모든 메뉴(상단 01~06, 3단 메뉴의 세부 링크)를 해당 하위 게시판 서브페이지로 즉시 전환
+  const handleNavigate = (sectionId: string, subMenuId?: string) => {
     setCurrentSectionId(sectionId);
-    
+
+    // 하위 메뉴 ID가 있으면 그 탭을 열고, 없으면 카테고리 대표 첫 탭 선택
     if (subMenuId) {
       setCurrentSubMenuId(subMenuId);
     } else {
-      // 카테고리 대표 클릭 시 첫 번째 기본 탭 지정
       if (sectionId === 'worship') setCurrentSubMenuId('sunday-sermon');
       else if (sectionId === 'qt') setCurrentSubMenuId('qtin-guide');
       else if (sectionId === 'community') setCurrentSubMenuId('sarangbang');
@@ -70,7 +69,8 @@ export default function App() {
       else if (sectionId === 'about') setCurrentSubMenuId('vision-slogan');
     }
 
-    setViewMode('subpage'); // 서브페이지 모드 활성화!
+    setIsMegaMenuOpen(false); // 메뉴 닫기
+    setViewMode('subpage');   // 서브페이지로 화면 전환!
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -82,29 +82,30 @@ export default function App() {
         onOpenPrayer={() => setIsPrayerOpen(true)}
       />
 
-      {/* 2. 네비게이션 헤더 (어떤 함수명으로 호출해도 handleNavigateSection으로 연결) */}
+      {/* 2. 네비게이션 헤더 */}
       <HeaderNav
         onOpenMegaMenu={() => setIsMegaMenuOpen(true)}
         onGoHome={handleGoHome}
-        onNavigateSection={handleNavigateSection}
-        onNavigateSubPage={handleNavigateSection}
+        onNavigateSection={handleNavigate}
+        onNavigateSubPage={handleNavigate}
       />
 
-      {/* 3. 전체 메뉴 오버레이 (사이트맵) */}
+      {/* 3. 3단 메뉴 클릭 시 열리는 전체 사이트맵 오버레이 */}
       <MegaMenuOverlay
         isOpen={isMegaMenuOpen}
         onClose={() => setIsMegaMenuOpen(false)}
-        onOpenBulletin={() => setIsBulletinOpen(true)}
-        onOpenPrayer={() => setIsPrayerOpen(true)}
-        onOpenSubDetail={(type) => setActiveSubDetail(type)}
-        onNavigateSection={handleNavigateSection}
-        onNavigateSubPage={handleNavigateSection}
+        onOpenBulletin={() => { setIsMegaMenuOpen(false); setIsBulletinOpen(true); }}
+        onOpenPrayer={() => { setIsMegaMenuOpen(false); setIsPrayerOpen(true); }}
+        /* 팝업 모달 대신 하위 게시판 페이지로 바로 이동하도록 통일 */
+        onOpenSubDetail={(type: string) => handleNavigate('about', type)}
+        onNavigateSection={handleNavigate}
+        onNavigateSubPage={handleNavigate}
       />
 
-      {/* 4. 메인 화면 vs 서브페이지 전환 영역 */}
+      {/* 4. 메인 콘텐츠 영역 (홈 vs 서브페이지 전환) */}
       <main className="flex-1">
         {viewMode === 'subpage' ? (
-          /* 서브페이지 레이아웃 활성화 */
+          /* 기존 콘텐츠가 100% 살아있는 서브페이지 */
           <SubPageLayout
             initialSectionId={currentSectionId}
             initialSubMenuId={currentSubMenuId}
@@ -113,40 +114,33 @@ export default function App() {
             onOpenPrayer={() => setIsPrayerOpen(true)}
           />
         ) : (
-          /* 메인 홈 랜딩 화면 */
+          /* 메인 홈 */
           <>
-            {/* 반응형 메인 배너 */}
             <HeroBanner
               onOpenBulletin={() => setIsBulletinOpen(true)}
               onOpenPrayer={() => setIsPrayerOpen(true)}
             />
 
-            {/* 메인 4개 퀵 그리드 */}
             <MainQuickGrid
               onOpenBulletin={() => setIsBulletinOpen(true)}
               onOpenPrayer={() => setIsPrayerOpen(true)}
-              onNavigateSection={handleNavigateSection}
+              onNavigateSection={handleNavigate}
             />
 
-            {/* 예배 시간표 표 */}
             <WorshipTableSection />
 
-            {/* 온라인 예배 및 말씀 다시보기 */}
             <OnlineWorshipSection
-              onNavigateSection={handleNavigateSection}
+              onNavigateSection={handleNavigate}
             />
 
-            {/* 말씀 묵상 / 공동체 양육 / 사역과 선교 / 은혜소식 */}
             <CommunitySections
               onOpenBulletin={() => setIsBulletinOpen(true)}
               onOpenPrayer={() => setIsPrayerOpen(true)}
-              onNavigateSection={handleNavigateSection}
+              onNavigateSection={handleNavigate}
             />
 
-            {/* 시온성 갤러리 */}
             <GallerySection />
 
-            {/* 오시는 길 & 온라인 헌금 계좌 */}
             <LocationAndOffering />
           </>
         )}
@@ -155,29 +149,25 @@ export default function App() {
       {/* 5. 포털 푸터 */}
       <PortalFooter onOpenAdmin={() => setIsAdminDashboardOpen(true)} />
 
-      {/* 6. 우측 하단 플로팅 액션 버튼 */}
+      {/* 6. 우측 하단 플로팅 버튼 */}
       <FloatingActions onOpenPrayer={() => setIsPrayerOpen(true)} />
 
-      {/* 7. 모달 팝업들 */}
-      <BulletinModal
-        isOpen={isBulletinOpen}
-        onClose={() => setIsBulletinOpen(false)}
-      />
+      {/* 7. 공통 모달 (주보, 중보기도) */}
+      {isBulletinOpen && (
+        <BulletinModal
+          isOpen={isBulletinOpen}
+          onClose={() => setIsBulletinOpen(false)}
+        />
+      )}
 
-      <PrayerModal
-        isOpen={isPrayerOpen}
-        onClose={() => setIsPrayerOpen(false)}
-      />
+      {isPrayerOpen && (
+        <PrayerModal
+          isOpen={isPrayerOpen}
+          onClose={() => setIsPrayerOpen(false)}
+        />
+      )}
 
-      <SubDetailModal
-        type={activeSubDetail}
-        isOpen={activeSubDetail !== null}
-        onClose={() => setActiveSubDetail(null)}
-        onOpenBulletin={() => setIsBulletinOpen(true)}
-        onOpenPrayer={() => setIsPrayerOpen(true)}
-      />
-
-      {/* 8. 통합 관리자 대시보드 */}
+      {/* 8. 관리자 대시보드 */}
       <AdminDashboard
         isOpen={isAdminDashboardOpen}
         onClose={() => {
