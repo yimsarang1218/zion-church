@@ -3,11 +3,11 @@ import {
   Save, Image as ImageIcon, BookOpen, 
   Video, Users, Camera, LogOut, 
   Trash2, Plus, ArrowLeft, RefreshCw, LayoutDashboard,
-  ShieldCheck, AlertCircle, HeartHandshake, Phone, Upload, FolderDown, Loader2
+  ShieldCheck, AlertCircle, HeartHandshake, Phone, Upload, FolderDown, Loader2, Edit3, X
 } from 'lucide-react';
 import { 
   doc, getDoc, setDoc, collection, getDocs, 
-  addDoc, deleteDoc 
+  addDoc, deleteDoc, updateDoc 
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
@@ -20,7 +20,7 @@ interface AdminDashboardProps {
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
-  const [activeMenu, setActiveMenu] = useState<'site' | 'bulletins' | 'prayers' | 'posts' | 'gallery'>('site');
+  const [activeMenu, setActiveMenu] = useState<'site' | 'bulletins' | 'posts' | 'gallery' | 'resources' | 'prayers'>('site');
 
   // 1. 온라인 성소 & 표어 설정
   const [sanctuaryVideoInput, setSanctuaryVideoInput] = useState('https://youtu.be/1azfrCPgb84');
@@ -33,8 +33,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
   const [bulletinDate, setBulletinDate] = useState('');
   const [bulletinTitle, setBulletinTitle] = useState('');
 
-  // 3. 설교 및 게시판 등록
+  // 3. 설교 및 전체 게시판 등록 & 수정 상태
   const [posts, setPosts] = useState<any[]>([]);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null); // 수정 중인 글 ID
   const [selectedCategory, setSelectedCategory] = useState('sunday');
   const [postTitle, setPostTitle] = useState('');
   const [postScripture, setPostScripture] = useState('');
@@ -42,14 +43,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
   const [postYoutubeUrl, setPostYoutubeUrl] = useState('');
   const [postContent, setPostContent] = useState('');
 
-  // 4. 교회 자료실 (Resources & Bulletins)
+  // 4. 교회 자료실 등록 & 수정 상태
   const [resources, setResources] = useState<any[]>([]);
+  const [editingResourceId, setEditingResourceId] = useState<string | null>(null);
   const [resourceTitle, setResourceTitle] = useState('');
   const [resourceCategory, setResourceCategory] = useState('교회주보');
+  const [resourceDate, setResourceDate] = useState('');
   const [resourceFile, setResourceFile] = useState<File | null>(null);
 
-  // 5. 시온성 갤러리 사진 관리
+  // 5. 시온성 갤러리 등록 & 수정 상태
   const [gallery, setGallery] = useState<any[]>([]);
+  const [editingGalleryId, setEditingGalleryId] = useState<string | null>(null);
   const [galleryTitle, setGalleryTitle] = useState('');
   const [galleryDesc, setGalleryDesc] = useState('');
   const [galleryFile, setGalleryFile] = useState<File | null>(null);
@@ -60,7 +64,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  // 유튜브 URL에서 자동으로 11자리 ID를 추출하는 함수
+  // 유튜브 URL에서 자동으로 11자리 비디오 ID 추출
   const extractYoutubeId = (url: string) => {
     if (!url) return '';
     const cleanUrl = url.trim();
@@ -70,7 +74,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     return (match && match[2].length === 11) ? match[2] : cleanUrl;
   };
 
-  // Firebase Storage에 파일 원본을 올리고 고유 다운로드 URL을 받아오는 함수 (용량 무제한)
+  // Firebase Storage 파일 업로드 (용량 무제한)
   const uploadFileToStorage = async (file: File, folderPath: string): Promise<string> => {
     const fileRef = ref(storage, `${folderPath}/${Date.now()}_${file.name}`);
     await uploadBytes(fileRef, file);
@@ -85,7 +89,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
   const loadAllAdminData = async () => {
     setIsLoading(true);
     try {
-      // 1) 사이트 설정
       const siteDoc = await getDoc(doc(db, 'site_settings', 'main_config'));
       if (siteDoc.exists()) {
         const d = siteDoc.data();
@@ -95,19 +98,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
         if (d.sloganText) setSloganText(d.sloganText);
       }
 
-      // 2) 자료실 목록 (주보 포함)
       const resSnap = await getDocs(collection(db, 'resources'));
       setResources(resSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
-      // 3) 설교 목록
       const postsSnap = await getDocs(collection(db, 'posts'));
       setPosts(postsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
-      // 4) 갤러리 목록
       const galSnap = await getDocs(collection(db, 'gallery'));
       setGallery(galSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
-      // 5) 기도 접수 목록
       const prayerSnap = await getDocs(collection(db, 'prayers'));
       setPrayers(prayerSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (e) {
@@ -158,7 +157,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
 
     setIsUploading(true);
     try {
-      // 1) Storage에 주보 파일 업로드
       const imageUrls: string[] = [];
       for (const file of bulletinFiles) {
         const url = await uploadFileToStorage(file, 'bulletins');
@@ -167,19 +165,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
 
       const title = bulletinTitle.trim() || `${bulletinDate.trim()} 주보`;
 
-      // 2) 최신 주보 설정 (메인의 [금주의 주보 보기] 버튼과 즉시 연동)
+      // 1) 최신 주보 설정 (메인의 [금주의 주보 보기] 버튼과 즉시 연동)
       await setDoc(doc(db, 'site_settings', 'main_config'), {
         bulletinDate: title,
         bulletinImages: imageUrls,
       }, { merge: true });
 
-      // 3) '교회 자료실' 컬렉션에 자동 누적 (이전 주보가 계속 쌓임)
+      // 2) '교회 자료실' 컬렉션에 자동 누적 (이전 주보가 계속 쌓임)
       const resourceData = {
         title: `[주보] ${title}`,
         category: '교회주보',
         date: bulletinDate.trim(),
         images: imageUrls,
-        fileUrl: imageUrls[0], // 대표 다운로드 링크
+        fileUrl: imageUrls[0],
         desc: `${bulletinDate.trim()} 시온성교회 주보입니다.`,
         createdAt: new Date().toISOString()
       };
@@ -197,77 +195,148 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     }
   };
 
-  // 설교 등록
-  const handleCreatePost = async (e: React.FormEvent) => {
+  // ==========================================
+  // 게시글 등록 및 수정 (CREATE & UPDATE)
+  // ==========================================
+  const handleStartEditPost = (p: any) => {
+    setEditingPostId(p.id);
+    setSelectedCategory(p.category || 'sunday');
+    setPostTitle(p.title || '');
+    setPostScripture(p.scripture || '');
+    setPostAuthor(p.author || '담임목사');
+    setPostYoutubeUrl(p.youtubeId ? `https://youtu.be/${p.youtubeId}` : '');
+    setPostContent(p.content || '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEditPost = () => {
+    setEditingPostId(null);
+    setPostTitle('');
+    setPostScripture('');
+    setPostYoutubeUrl('');
+    setPostContent('');
+  };
+
+  const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!postTitle.trim()) return;
 
     setIsUploading(true);
     try {
       const extractedId = extractYoutubeId(postYoutubeUrl);
-      const newPost = {
-        category: selectedCategory,
-        title: postTitle.trim(),
-        author: postAuthor.trim(),
-        date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
-        views: 1,
-        content: postContent.trim(),
-        scripture: postScripture.trim(),
-        youtubeId: extractedId,
-      };
 
-      const docRef = await addDoc(collection(db, 'posts'), newPost);
-      setPosts([{ id: docRef.id, ...newPost }, ...posts]);
-
-      setPostTitle('');
-      setPostScripture('');
-      setPostYoutubeUrl('');
-      setPostContent('');
-      alert('설교/게시글이 성공적으로 등록되었습니다.');
+      if (editingPostId) {
+        // [수정 모드]: 기존 문서 업데이트
+        const updateData = {
+          category: selectedCategory,
+          title: postTitle.trim(),
+          author: postAuthor.trim(),
+          content: postContent.trim(),
+          scripture: postScripture.trim(),
+          youtubeId: extractedId,
+          updatedAt: new Date().toISOString()
+        };
+        await updateDoc(doc(db, 'posts', editingPostId), updateData);
+        setPosts(posts.map(p => p.id === editingPostId ? { ...p, ...updateData } : p));
+        alert('게시글이 성공적으로 수정되었습니다!');
+        handleCancelEditPost();
+      } else {
+        // [신규 등록 모드]: 새 문서 추가
+        const newPost = {
+          category: selectedCategory,
+          title: postTitle.trim(),
+          author: postAuthor.trim(),
+          date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
+          views: 1,
+          content: postContent.trim(),
+          scripture: postScripture.trim(),
+          youtubeId: extractedId,
+        };
+        const docRef = await addDoc(collection(db, 'posts'), newPost);
+        setPosts([{ id: docRef.id, ...newPost }, ...posts]);
+        alert('새 게시글이 성공적으로 등록되었습니다.');
+        handleCancelEditPost();
+      }
     } catch (e) {
-      alert('게시글 등록 오류');
+      alert('게시글 저장 오류: ' + e);
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleDeletePost = async (id: string) => {
-    if (!window.confirm('이 게시글을 삭제하시겠습니까?')) return;
+    if (!window.confirm('정말 이 게시글을 삭제하시겠습니까?')) return;
     try {
       await deleteDoc(doc(db, 'posts', id));
       setPosts(posts.filter(p => p.id !== id));
+      if (editingPostId === id) handleCancelEditPost();
       alert('삭제되었습니다.');
     } catch (e) {
       alert('삭제 실패');
     }
   };
 
-  // 갤러리 사진 업로드 (Storage에 안전 저장)
-  const handleCreateGallery = async (e: React.FormEvent) => {
+  // ==========================================
+  // 갤러리 등록 및 수정 (CREATE & UPDATE)
+  // ==========================================
+  const handleStartEditGallery = (g: any) => {
+    setEditingGalleryId(g.id);
+    setGalleryTitle(g.title || '');
+    setGalleryDesc(g.desc || '');
+    setGalleryFile(null);
+  };
+
+  const handleCancelEditGallery = () => {
+    setEditingGalleryId(null);
+    setGalleryTitle('');
+    setGalleryDesc('');
+    setGalleryFile(null);
+  };
+
+  const handleSubmitGallery = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!galleryTitle.trim() || !galleryFile) {
-      alert('제목과 사진 파일을 선택해 주세요.');
-      return;
-    }
+    if (!galleryTitle.trim()) return;
 
     setIsUploading(true);
     try {
-      const fileUrl = await uploadFileToStorage(galleryFile, 'gallery');
-      const newGal = {
-        title: galleryTitle.trim(),
-        imageUrl: fileUrl,
-        date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
-        desc: galleryDesc.trim() || '시온성교회 사역 활동 모습입니다.',
-      };
+      if (editingGalleryId) {
+        // 수정 모드
+        let fileUrl = undefined;
+        if (galleryFile) {
+          fileUrl = await uploadFileToStorage(galleryFile, 'gallery');
+        }
+        const updateData: any = {
+          title: galleryTitle.trim(),
+          desc: galleryDesc.trim(),
+          updatedAt: new Date().toISOString()
+        };
+        if (fileUrl) updateData.imageUrl = fileUrl;
 
-      const docRef = await addDoc(collection(db, 'gallery'), newGal);
-      setGallery([{ id: docRef.id, ...newGal }, ...gallery]);
-      setGalleryTitle('');
-      setGalleryDesc('');
-      setGalleryFile(null);
-      alert('시온성 갤러리에 사진이 등록되었습니다.');
+        await updateDoc(doc(db, 'gallery', editingGalleryId), updateData);
+        setGallery(gallery.map(g => g.id === editingGalleryId ? { ...g, ...updateData } : g));
+        alert('사진 정보가 성공적으로 수정되었습니다!');
+        handleCancelEditGallery();
+      } else {
+        // 신규 등록 모드
+        if (!galleryFile) {
+          alert('사진 파일을 첨부해 주세요.');
+          setIsUploading(false);
+          return;
+        }
+        const fileUrl = await uploadFileToStorage(galleryFile, 'gallery');
+        const newGal = {
+          title: galleryTitle.trim(),
+          imageUrl: fileUrl,
+          date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
+          desc: galleryDesc.trim() || '시온성교회 사역 활동 모습입니다.',
+        };
+        const docRef = await addDoc(collection(db, 'gallery'), newGal);
+        setGallery([{ id: docRef.id, ...newGal }, ...gallery]);
+        alert('시온성 갤러리에 새 사진이 등록되었습니다.');
+        handleCancelEditGallery();
+      }
     } catch (e) {
-      alert('사진 등록 실패: ' + e);
+      alert('갤러리 저장 실패: ' + e);
     } finally {
       setIsUploading(false);
     }
@@ -278,39 +347,74 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     try {
       await deleteDoc(doc(db, 'gallery', id));
       setGallery(gallery.filter(g => g.id !== id));
+      if (editingGalleryId === id) handleCancelEditGallery();
       alert('삭제되었습니다.');
     } catch (e) {
       alert('삭제 실패');
     }
   };
 
-  // 일반 자료 등록 (교회 자료실 수동 등록용)
-  const handleCreateResource = async (e: React.FormEvent) => {
+  // ==========================================
+  // 교회 자료실 등록 및 수정 (CREATE & UPDATE)
+  // ==========================================
+  const handleStartEditResource = (r: any) => {
+    setEditingResourceId(r.id);
+    setResourceTitle(r.title || '');
+    setResourceCategory(r.category || '교회서식');
+    setResourceDate(r.date || '');
+    setResourceFile(null);
+  };
+
+  const handleCancelEditResource = () => {
+    setEditingResourceId(null);
+    setResourceTitle('');
+    setResourceCategory('교회서식');
+    setResourceDate('');
+    setResourceFile(null);
+  };
+
+  const handleSubmitResource = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resourceTitle.trim()) return;
 
     setIsUploading(true);
     try {
-      let fileUrl = '';
-      if (resourceFile) {
-        fileUrl = await uploadFileToStorage(resourceFile, 'resources');
+      if (editingResourceId) {
+        let fileUrl = undefined;
+        if (resourceFile) {
+          fileUrl = await uploadFileToStorage(resourceFile, 'resources');
+        }
+        const updateData: any = {
+          title: resourceTitle.trim(),
+          category: resourceCategory,
+          date: resourceDate.trim() || new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
+          updatedAt: new Date().toISOString()
+        };
+        if (fileUrl) updateData.fileUrl = fileUrl;
+
+        await updateDoc(doc(db, 'resources', editingResourceId), updateData);
+        setResources(resources.map(r => r.id === editingResourceId ? { ...r, ...updateData } : r));
+        alert('자료 정보가 성공적으로 수정되었습니다!');
+        handleCancelEditResource();
+      } else {
+        let fileUrl = '';
+        if (resourceFile) {
+          fileUrl = await uploadFileToStorage(resourceFile, 'resources');
+        }
+        const newRes = {
+          title: resourceTitle.trim(),
+          category: resourceCategory,
+          desc: '교회 성도용 신앙 자료입니다.',
+          fileUrl,
+          date: resourceDate.trim() || new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
+        };
+        const docRef = await addDoc(collection(db, 'resources'), newRes);
+        setResources([{ id: docRef.id, ...newRes }, ...resources]);
+        alert('교회 자료실에 등록되었습니다.');
+        handleCancelEditResource();
       }
-
-      const newRes = {
-        title: resourceTitle.trim(),
-        category: resourceCategory,
-        desc: '교회 성도용 신앙 자료입니다.',
-        fileUrl,
-        date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
-      };
-
-      const docRef = await addDoc(collection(db, 'resources'), newRes);
-      setResources([{ id: docRef.id, ...newRes }, ...resources]);
-      setResourceTitle('');
-      setResourceFile(null);
-      alert('교회 자료실에 등록되었습니다.');
     } catch (e) {
-      alert('자료 등록 실패');
+      alert('자료 저장 실패: ' + e);
     } finally {
       setIsUploading(false);
     }
@@ -321,6 +425,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     try {
       await deleteDoc(doc(db, 'resources', id));
       setResources(resources.filter(r => r.id !== id));
+      if (editingResourceId === id) handleCancelEditResource();
       alert('자료가 삭제되었습니다.');
     } catch (e) {
       alert('삭제 실패');
@@ -338,9 +443,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     }
   };
 
+  const getCategoryLabel = (cat: string) => {
+    switch (cat) {
+      case 'sunday': return '주일예배';
+      case 'wednesday': return '수요행복예배';
+      case 'friday': return '금요기도회';
+      case 'tue-thu': return '화·목 저녁기도회';
+      case 'cell-couple': return '부부·가정 목장';
+      case 'cell-young': return '청년·직장 목장';
+      case 'discipleship': return '일대일 제자양육';
+      case 'mission': return '국내외 선교·구제';
+      case 'ministry': return '사역부서 소식';
+      default: return '일반글';
+    }
+  };
+
   if (!isOpen) return null;
 
-  // 로그인 인증창
+  // 1. 로그인 인증창 (비밀번호 노출 완전 제거)
   if (!isAuthenticated) {
     return (
       <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
@@ -353,13 +473,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
           </div>
           <span className="text-xs font-mono font-bold text-[#C49A45] tracking-widest uppercase">ZION CMS SYSTEM</span>
           <h2 className="text-2xl font-black text-slate-900 mt-1 mb-2">통합 관리자 인증</h2>
-          <p className="text-xs text-slate-500 mb-8">하남 시온성교회 관리자 비밀번호를 입력해 주십시오.</p>
+          <p className="text-xs text-slate-500 mb-8">하남 시온성교회 관리자 보안 비밀번호를 입력해 주십시오.</p>
           <form onSubmit={handleLogin} className="space-y-4">
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="비밀번호 (zion1218)"
+              placeholder="비밀번호를 입력하세요"
               className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#C49A45] focus:bg-white text-center"
               autoFocus
             />
@@ -383,7 +503,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
           </div>
           <div>
             <h1 className="text-base font-extrabold leading-none">하남 시온성교회 CMS 관리자 센터</h1>
-            <span className="text-[10px] text-slate-400 font-mono">STORAGE-BACKED INTEGRATED CMS</span>
+            <span className="text-[10px] text-slate-400 font-mono">COMPLETE CMS (CREATE / READ / UPDATE / DELETE)</span>
           </div>
         </div>
 
@@ -399,7 +519,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
         </div>
       </header>
 
-      {/* 작업 영역 */}
+      {/* 본문 2단 */}
       <div className="flex-1 flex overflow-hidden">
         
         {/* LNB */}
@@ -434,8 +554,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
               activeMenu === 'posts' ? 'bg-[#C49A45] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <Video className="w-4 h-4" />
-            <span>설교 및 예배 게시글 등록</span>
+            <Edit3 className="w-4 h-4" />
+            <span>전체 게시판 등록·수정 ({posts.length}건)</span>
           </button>
 
           <button
@@ -445,7 +565,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
             }`}
           >
             <Camera className="w-4 h-4" />
-            <span>시온성 사진첩/갤러리</span>
+            <span>시온성 사진첩/갤러리 ({gallery.length}장)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveMenu('resources')}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-extrabold text-left transition-colors cursor-pointer ${
+              activeMenu === 'resources' ? 'bg-[#C49A45] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <FolderDown className="w-4 h-4" />
+            <span>교회 자료실 보관 목록 ({resources.length}건)</span>
           </button>
 
           <button
@@ -464,7 +594,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
           </button>
         </aside>
 
-        {/* 메인 작업창 */}
+        {/* 본문 작업 영역 */}
         <main className="flex-1 bg-slate-50 overflow-y-auto p-6 sm:p-10">
           
           {/* 1. 온라인 성소 관리 */}
@@ -487,9 +617,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
                     placeholder="https://youtu.be/... 또는 https://www.youtube.com/watch?v=..."
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#C49A45]"
                   />
-                  <span className="text-[10px] text-slate-400 mt-1 block">
-                    ID만 추출할 필요 없이 복사한 유튜브 링크를 그대로 넣으시면 시스템이 자동 인식합니다.
-                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -575,22 +702,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      주보 이미지 파일 첨부 (컴퓨터에서 선택, 1면/2면 등 다중 선택 가능)
+                      주보 이미지 파일 첨부 (1면/2면 등 다중 선택 가능)
                     </label>
                     <input
                       type="file"
                       accept="image/*"
                       multiple
                       onChange={(e) => {
-                        if (e.target.files) {
-                          setBulletinFiles(Array.from(e.target.files));
-                        }
+                        if (e.target.files) setBulletinFiles(Array.from(e.target.files));
                       }}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#C49A45] file:text-white cursor-pointer"
                     />
                     {bulletinFiles.length > 0 && (
                       <p className="text-xs text-emerald-600 font-bold mt-2">
-                        ✓ {bulletinFiles.length}개의 파일이 선택되었습니다. (Firebase Storage 안전 전송)
+                        ✓ {bulletinFiles.length}개의 주보 파일이 선택되었습니다.
                       </p>
                     )}
                   </div>
@@ -614,149 +739,245 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
                   </button>
                 </form>
               </div>
-
-              {/* 교회 자료실에 누적된 주보 및 서식 목록 */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-                <h3 className="text-sm font-bold text-slate-900">교회 자료실에 보관된 주보 및 서식 목록 ({resources.length}건)</h3>
-                <div className="divide-y divide-slate-100">
-                  {resources.map((r) => (
-                    <div key={r.id} className="py-3 flex items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-[#A27B2B]">{r.category}</span>
-                          <strong className="text-xs sm:text-sm font-bold text-slate-900">{r.title}</strong>
-                        </div>
-                        <span className="text-[11px] text-slate-400 font-mono mt-0.5 block">발행일: {r.date}</span>
-                      </div>
-                      <button onClick={() => handleDeleteResource(r.id)} className="p-1.5 text-slate-400 hover:text-rose-600">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
 
-          {/* 3. 설교 등록 */}
+          {/* 3. 전체 게시판 글 등록 & 수정 (CREATE & UPDATE 완전 지원) */}
           {activeMenu === 'posts' && (
             <div className="max-w-4xl space-y-8">
-              <div>
-                <h2 className="text-xl font-black text-slate-900">설교 및 게시판 글 등록·삭제</h2>
-                <p className="text-xs text-slate-500 mt-0.5">유튜브 링크 전체를 넣으시면 자동으로 영상 플레이어가 만들어집니다.</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-black text-slate-900">
+                    {editingPostId ? '✏️ 게시글 수정 모드' : '새 게시글 작성 및 업로드'}
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {editingPostId 
+                      ? '내용을 수정한 후 [수정 내용 저장] 버튼을 누르시면 즉시 홈페이지에 반영됩니다.' 
+                      : '주일/수요/금요/화·목 설교, 부부/청년 목장, 일대일 제자양육, 국내외 선교 및 구제 글을 작성합니다.'}
+                  </p>
+                </div>
+                {editingPostId && (
+                  <button
+                    onClick={handleCancelEditPost}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>수정 취소 (새 글 쓰기)</span>
+                  </button>
+                )}
               </div>
 
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-                <form onSubmit={handleCreatePost} className="space-y-4">
+              {/* 글 작성/수정 폼 */}
+              <div className={`p-6 rounded-2xl border transition-all ${
+                editingPostId 
+                  ? 'bg-amber-50/50 border-amber-300 shadow-md ring-2 ring-amber-400/20' 
+                  : 'bg-white border-slate-200 shadow-2xs'
+              }`}>
+                <form onSubmit={handleSubmitPost} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">예배 구분</label>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">게시판 카테고리</label>
                       <select
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800"
                       >
-                        <option value="sunday">주일예배</option>
-                        <option value="wednesday">수요행복예배</option>
-                        <option value="friday">금요기도회</option>
-                        <option value="tue-thu">화·목 저녁기도회</option>
+                        <optgroup label="[01 예배와 말씀]">
+                          <option value="sunday">주일예배</option>
+                          <option value="wednesday">수요행복예배</option>
+                          <option value="friday">금요기도회</option>
+                          <option value="tue-thu">화·목 저녁기도회</option>
+                        </optgroup>
+                        <optgroup label="[03 공동체와 양육]">
+                          <option value="cell-couple">부부·가정 목장</option>
+                          <option value="cell-young">청년·직장 목장</option>
+                          <option value="discipleship">일대일 제자양육</option>
+                        </optgroup>
+                        <optgroup label="[04 사역과 선교]">
+                          <option value="mission">국내외 선교 및 지역 구제</option>
+                          <option value="ministry">사역부서 소식</option>
+                        </optgroup>
                       </select>
                     </div>
+
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">설교자</label>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">작성자 / 설교자</label>
                       <input
                         type="text"
                         value={postAuthor}
                         onChange={(e) => setPostAuthor(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs"
                       />
                     </div>
+
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">유튜브 링크 (통째로 붙여넣기)</label>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">유튜브 링크 (선택)</label>
                       <input
                         type="text"
                         value={postYoutubeUrl}
                         onChange={(e) => setPostYoutubeUrl(e.target.value)}
-                        placeholder="https://youtu.be/... 링크 그대로 붙여넣기"
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono"
+                        placeholder="https://youtu.be/... 링크 그대로 입력"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">설교 제목</label>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">게시글 제목</label>
                       <input
                         type="text"
+                        required
                         value={postTitle}
                         onChange={(e) => setPostTitle(e.target.value)}
-                        placeholder="예: 다시 부르시는 은혜"
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
+                        placeholder="제목을 입력하세요"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">성경 본문 구절</label>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">성경 본문 구절 (선택)</label>
                       <input
                         type="text"
                         value={postScripture}
                         onChange={(e) => setPostScripture(e.target.value)}
                         placeholder="예: 창세기 35:1~3"
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">설교 요약 / 본문 내용</label>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">본문 내용 / 말씀 나눔</label>
                     <textarea
-                      rows={4}
+                      rows={5}
+                      required
                       value={postContent}
                       onChange={(e) => setPostContent(e.target.value)}
-                      placeholder="설교 요약 및 나눔 문구를 입력하세요."
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
+                      placeholder="성도들과 나눌 은혜의 말씀 및 공지 내용을 입력하세요."
+                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium resize-y"
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={isUploading}
-                    className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer"
-                  >
-                    {isUploading ? '저장 중...' : '설교 게시글 게시하기'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="submit"
+                      disabled={isUploading}
+                      className={`px-6 py-2.5 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5 ${
+                        editingPostId 
+                          ? 'bg-[#C49A45] hover:bg-[#A27B2B]' 
+                          : 'bg-slate-900 hover:bg-slate-800'
+                      }`}
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>{isUploading ? '저장 중...' : editingPostId ? '수정 내용 저장 완료' : '새 게시글 등록하기'}</span>
+                    </button>
+                    {editingPostId && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEditPost}
+                        className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
+                      >
+                        취소
+                      </button>
+                    )}
+                  </div>
                 </form>
               </div>
 
-              {/* 목록 */}
+              {/* 등록된 글 전체 목록 (수정 & 삭제 트리거) */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-                <h3 className="text-sm font-bold text-slate-900">등록된 게시글 목록 ({posts.length}건)</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    현재 등록된 게시글 목록 ({posts.length}건)
+                  </h3>
+                  <span className="text-[11px] text-slate-400">
+                    * 글을 누르거나 [수정]을 누르면 위 폼에서 바로 수정할 수 있습니다.
+                  </span>
+                </div>
+
                 <div className="divide-y divide-slate-100">
-                  {posts.map((p) => (
-                    <div key={p.id} className="py-3 flex items-center justify-between gap-4">
-                      <div>
-                        <span className="text-xs font-bold text-slate-900 block">{p.title}</span>
-                        <p className="text-[11px] text-slate-400">{p.date} | {p.author} | {p.scripture || '본문 없음'}</p>
+                  {posts.length === 0 ? (
+                    <p className="text-xs text-slate-400 py-8 text-center">등록된 게시글이 없습니다.</p>
+                  ) : (
+                    posts.map((p) => (
+                      <div 
+                        key={p.id} 
+                        className={`py-3.5 px-3 flex items-center justify-between gap-4 rounded-xl transition-colors cursor-pointer hover:bg-slate-50 ${
+                          editingPostId === p.id ? 'bg-amber-50/80 border border-amber-300' : ''
+                        }`}
+                        onClick={() => handleStartEditPost(p)}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
+                              {getCategoryLabel(p.category)}
+                            </span>
+                            <span className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                              {p.title}
+                            </span>
+                            {p.youtubeId && (
+                              <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                                영상연동
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-400 mt-1">
+                            {p.date} | {p.author} | {p.scripture ? `본문: ${p.scripture}` : '본문 없음'}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleStartEditPost(p)}
+                            className="p-1.5 rounded-lg text-amber-700 hover:bg-amber-100 transition-colors text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
+                            title="수정하기"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>수정</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeletePost(p.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="삭제하기"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                      <button onClick={() => handleDeletePost(p.id)} className="p-1.5 text-slate-400 hover:text-rose-600">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* 4. 시온성 갤러리 */}
+          {/* 4. 시온성 갤러리 사진 관리 (등록 & 수정 & 삭제) */}
           {activeMenu === 'gallery' && (
             <div className="max-w-4xl space-y-8">
-              <div>
-                <h2 className="text-xl font-black text-slate-900">시온성 갤러리 사진 관리</h2>
-                <p className="text-xs text-slate-500 mt-0.5">내 컴퓨터의 사진을 직접 선택하여 Storage에 영구 저장합니다.</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-black text-slate-900">
+                    {editingGalleryId ? '✏️ 사진 정보 수정 모드' : '시온성 갤러리 사진 업로드'}
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    내 컴퓨터의 사진을 직접 선택하여 Storage에 영구 저장합니다.
+                  </p>
+                </div>
+                {editingGalleryId && (
+                  <button
+                    onClick={handleCancelEditGallery}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>수정 취소 (새 사진 올리기)</span>
+                  </button>
+                )}
               </div>
 
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-                <form onSubmit={handleCreateGallery} className="space-y-4">
+              <div className={`p-6 rounded-2xl border transition-all ${
+                editingGalleryId ? 'bg-amber-50/50 border-amber-300 shadow-md' : 'bg-white border-slate-200 shadow-2xs'
+              }`}>
+                <form onSubmit={handleSubmitGallery} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">행사/사역 제목</label>
@@ -765,19 +986,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
                         required
                         value={galleryTitle}
                         onChange={(e) => setGalleryTitle(e.target.value)}
-                        placeholder="예: 2026 전교인 체육대회"
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                        placeholder="예: 2026 청년 목장 모임"
+                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">사진 파일 첨부 (컴퓨터에서 선택)</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        {editingGalleryId ? '사진 파일 교체 (선택 안 하면 기존 사진 유지)' : '사진 파일 첨부'}
+                      </label>
                       <input
                         type="file"
                         accept="image/*"
                         onChange={(e) => {
                           if (e.target.files) setGalleryFile(e.target.files[0]);
                         }}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#C49A45] file:text-white cursor-pointer"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#C49A45] file:text-white cursor-pointer"
                       />
                     </div>
                   </div>
@@ -789,18 +1012,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
                       value={galleryDesc}
                       onChange={(e) => setGalleryDesc(e.target.value)}
                       placeholder="활동에 대한 설명을 적어주세요."
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs"
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={isUploading}
-                    className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center gap-2"
-                  >
-                    {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                    <span>갤러리에 등록하기</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="submit"
+                      disabled={isUploading}
+                      className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center gap-2 cursor-pointer"
+                    >
+                      {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      <span>{isUploading ? '저장 중...' : editingGalleryId ? '사진 정보 수정 저장' : '갤러리에 새 사진 등록'}</span>
+                    </button>
+                    {editingGalleryId && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEditGallery}
+                        className="px-4 py-2.5 bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
+                      >
+                        취소
+                      </button>
+                    )}
+                  </div>
                 </form>
               </div>
 
@@ -809,13 +1043,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
                 <h3 className="text-sm font-bold text-slate-900">등록된 사진 목록 ({gallery.length}장)</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {gallery.map((g) => (
-                    <div key={g.id} className="p-3 border border-slate-100 rounded-xl space-y-2 relative">
+                    <div 
+                      key={g.id} 
+                      className={`p-3 border rounded-xl space-y-2 relative transition-all ${
+                        editingGalleryId === g.id ? 'border-amber-400 bg-amber-50/50' : 'border-slate-100'
+                      }`}
+                    >
                       <img src={g.imageUrl} alt={g.title} className="w-full h-32 object-cover rounded-lg bg-slate-100" />
                       <strong className="text-xs font-bold text-slate-900 block truncate">{g.title}</strong>
                       <span className="text-[10px] text-slate-400 block">{g.date}</span>
-                      <button onClick={() => handleDeleteGallery(g.id)} className="absolute top-4 right-4 p-1.5 rounded-lg bg-black/60 text-white hover:bg-rose-600">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      
+                      <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                        <button
+                          onClick={() => handleStartEditGallery(g)}
+                          className="flex-1 py-1 rounded bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>수정</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteGallery(g.id)}
+                          className="p-1 rounded bg-slate-100 hover:bg-rose-100 text-slate-400 hover:text-rose-600 cursor-pointer"
+                          title="삭제"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -823,7 +1076,141 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
             </div>
           )}
 
-          {/* 5. 신앙상담 / 기도함 */}
+          {/* 5. 교회 자료실 보관 목록 (등록 & 수정 & 삭제) */}
+          {activeMenu === 'resources' && (
+            <div className="max-w-4xl space-y-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-black text-slate-900">
+                    {editingResourceId ? '✏️ 자료 수정 모드' : '교회 자료실 보관 및 등록'}
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">교회 서식이나 주보를 수정하고 관리합니다.</p>
+                </div>
+                {editingResourceId && (
+                  <button
+                    onClick={handleCancelEditResource}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>수정 취소</span>
+                  </button>
+                )}
+              </div>
+
+              <div className={`p-6 rounded-2xl border transition-all ${
+                editingResourceId ? 'bg-amber-50/50 border-amber-300 shadow-md' : 'bg-white border-slate-200 shadow-2xs'
+              }`}>
+                <form onSubmit={handleSubmitResource} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">자료 구분</label>
+                      <select
+                        value={resourceCategory}
+                        onChange={(e) => setResourceCategory(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold"
+                      >
+                        <option value="교회주보">교회주보</option>
+                        <option value="교회서식">교회서식</option>
+                        <option value="행정양식">행정양식</option>
+                        <option value="성경공부">성경공부 자료</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">자료 제목</label>
+                      <input
+                        type="text"
+                        required
+                        value={resourceTitle}
+                        onChange={(e) => setResourceTitle(e.target.value)}
+                        placeholder="자료 제목 입력"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">등록 날짜</label>
+                      <input
+                        type="text"
+                        value={resourceDate}
+                        onChange={(e) => setResourceDate(e.target.value)}
+                        placeholder="예: 2026.10.18"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                      {editingResourceId ? '파일 교체 (선택 안 하면 기존 파일 유지)' : '첨부 파일 선택'}
+                    </label>
+                    <input
+                      type="file"
+                      onChange={(e) => {
+                        if (e.target.files) setResourceFile(e.target.files[0]);
+                      }}
+                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="submit"
+                      disabled={isUploading}
+                      className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl cursor-pointer"
+                    >
+                      {isUploading ? '저장 중...' : editingResourceId ? '자료 수정 저장' : '자료실에 등록'}
+                    </button>
+                    {editingResourceId && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEditResource}
+                        className="px-4 py-2.5 bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
+                      >
+                        취소
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+
+              {/* 목록 */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                <h3 className="text-sm font-bold text-slate-900">교회 자료실 보관 목록 ({resources.length}건)</h3>
+                <div className="divide-y divide-slate-100">
+                  {resources.map((r) => (
+                    <div 
+                      key={r.id} 
+                      className={`py-3 px-3 flex items-center justify-between gap-4 rounded-xl transition-colors cursor-pointer hover:bg-slate-50 ${
+                        editingResourceId === r.id ? 'bg-amber-50/80 border border-amber-300' : ''
+                      }`}
+                      onClick={() => handleStartEditResource(r)}
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-[#C49A45]">{r.category}</span>
+                          <strong className="text-xs sm:text-sm font-bold text-slate-900">{r.title}</strong>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-mono mt-0.5 block">발행일: {r.date}</span>
+                      </div>
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleStartEditResource(r)}
+                          className="p-1.5 rounded-lg text-amber-700 hover:bg-amber-100 text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>수정</span>
+                        </button>
+                        <button onClick={() => handleDeleteResource(r.id)} className="p-1.5 text-slate-400 hover:text-rose-600">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 6. 신앙상담 / 기도함 */}
           {activeMenu === 'prayers' && (
             <div className="max-w-4xl space-y-6">
               <div>
