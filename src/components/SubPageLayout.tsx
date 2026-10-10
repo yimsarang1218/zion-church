@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Home, ChevronRight, Search, ArrowLeft, Eye, Calendar, 
-  User, Plus, Lock, Check, Video, Volume2, MapPin, 
+  User, Check, Video, Volume2, MapPin, 
   CreditCard, BookOpen, Heart, Sparkles, Navigation, Copy, Loader2,
-  Trash2, Image as ImageIcon
+  Image as ImageIcon
 } from 'lucide-react';
-import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { CHURCH_INFO } from '../data/churchData';
 
@@ -143,32 +143,12 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
   const [newcomers, setNewcomers] = useState<NewcomerItem[]>(DEFAULT_NEWCOMERS);
   const [gallery, setGallery] = useState<GalleryItem[]>(DEFAULT_GALLERY);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [copiedAccount, setCopiedAccount] = useState(false);
 
-  // 관리자 모드 상태
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  
-  // 관리자 입력 폼 상태
-  const [adminTargetCategory, setAdminTargetCategory] = useState('sunday');
-  const [newTitle, setNewTitle] = useState('');
-  const [newAuthor, setNewAuthor] = useState('관리자');
-  const [newScripture, setNewScripture] = useState('');
-  const [newYoutubeId, setNewYoutubeId] = useState('');
-  const [newAudioUrl, setNewAudioUrl] = useState('');
-  const [newContent, setNewContent] = useState('');
-  const [newNewcomerName, setNewNewcomerName] = useState('');
-  const [newNewcomerDesc, setNewNewcomerDesc] = useState('');
-  const [newGalleryTitle, setNewGalleryTitle] = useState('');
-  const [newGalleryImage, setNewGalleryImage] = useState('');
-  const [newGalleryDesc, setNewGalleryDesc] = useState('');
-
-  // 1. 컴포넌트 마운트 시 Firestore에서 데이터 불러오기
+  // 1. 컴포넌트 마운트 시 Firestore에서 데이터 불러오기 (읽기 전용 동기화)
   useEffect(() => {
     const fetchFirestoreData = async () => {
       try {
@@ -215,7 +195,13 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
     fetchFirestoreData();
   }, []);
 
-  // 6대 섹션 및 하위 메뉴 규격 (상단 네비와 100% 일치)
+  // 외부 props 변경 시 동기화
+  useEffect(() => {
+    if (initialSectionId) setCurrentSectionId(initialSectionId);
+    if (initialSubMenuId) setCurrentSubMenuId(initialSubMenuId);
+  }, [initialSectionId, initialSubMenuId]);
+
+  // 6대 섹션 및 하위 메뉴 규격
   const SECTIONS = {
     worship: {
       title: '예배와 말씀',
@@ -300,145 +286,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
     return posts.filter(p => p.category === cat && p.title.toLowerCase().includes(searchKeyword.toLowerCase()));
   };
 
-  const handleAdminAuth = () => {
-    const inputClean = adminPassword.trim().toLowerCase();
-    if (inputClean === 'zion1218') {
-      setIsAdminAuthenticated(true);
-    } else {
-      alert('비밀번호가 올바르지 않습니다.');
-    }
-  };
-
-  // 관리자 게시글 등록 (Firestore addDoc 영구 저장)
-  const handleAdminSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      // 1) 갤러리 등록
-      if (currentSubMenuId === 'church-gallery') {
-        if (!newGalleryTitle.trim() || !newGalleryImage.trim()) {
-          alert('제목과 이미지 URL을 모두 입력해 주세요.');
-          setIsSubmitting(false);
-          return;
-        }
-        const newGalleryData = {
-          title: newGalleryTitle.trim(),
-          date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
-          imageUrl: newGalleryImage.trim(),
-          desc: newGalleryDesc.trim() || '시온성교회 사역 활동 모습입니다.',
-        };
-        try {
-          const docRef = await addDoc(collection(db, 'gallery'), newGalleryData);
-          setGallery([{ id: docRef.id, ...newGalleryData }, ...gallery]);
-        } catch {
-          setGallery([{ id: `g_${Date.now()}`, ...newGalleryData }, ...gallery]);
-        }
-        setNewGalleryTitle('');
-        setNewGalleryImage('');
-        setNewGalleryDesc('');
-        setIsAdminOpen(false);
-        alert('갤러리 사진이 성공적으로 등록되었습니다.');
-        return;
-      }
-
-      // 2) 새가족 등록
-      if (currentSubMenuId === 'newcomers-intro') {
-        if (!newNewcomerName.trim()) return;
-        const newCardData = {
-          name: newNewcomerName.trim(),
-          date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
-          desc: newNewcomerDesc.trim() || '시온성교회 새가족을 환영합니다.',
-        };
-        try {
-          const docRef = await addDoc(collection(db, 'newcomers'), newCardData);
-          setNewcomers([{ id: docRef.id, ...newCardData }, ...newcomers]);
-        } catch {
-          setNewcomers([{ id: `nc_${Date.now()}`, ...newCardData }, ...newcomers]);
-        }
-        setNewNewcomerName('');
-        setNewNewcomerDesc('');
-        setIsAdminOpen(false);
-        alert('새가족 소개가 성공적으로 등록되었습니다.');
-        return;
-      }
-
-      // 3) 일반 게시글/설교 등록
-      if (!newTitle.trim()) return;
-      const newPostData = {
-        no: posts.length + 1,
-        category: adminTargetCategory,
-        title: newTitle.trim(),
-        author: newAuthor.trim(),
-        date: new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace('.', ''),
-        views: 1,
-        content: newContent.trim(),
-        scripture: newScripture.trim(),
-        youtubeId: newYoutubeId.trim(),
-        audioUrl: newAudioUrl.trim(),
-      };
-      try {
-        const docRef = await addDoc(collection(db, 'posts'), newPostData);
-        setPosts([{ id: docRef.id, ...newPostData }, ...posts]);
-      } catch {
-        setPosts([{ id: `p_${Date.now()}`, ...newPostData }, ...posts]);
-      }
-
-      setNewTitle('');
-      setNewScripture('');
-      setNewYoutubeId('');
-      setNewAudioUrl('');
-      setNewContent('');
-      setIsAdminOpen(false);
-      alert('새 글이 성공적으로 등록되었습니다.');
-    } catch (err) {
-      alert('등록 중 오류가 발생했습니다.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // 관리자 삭제 기능: 게시글 삭제 (Firestore deleteDoc)
-  const handleDeletePost = async (id: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    if (!window.confirm('정말 이 게시글을 삭제하시겠습니까? (복구할 수 없습니다)')) return;
-
-    try {
-      await deleteDoc(doc(db, 'posts', id));
-    } catch (err) {
-      console.warn('Firestore 삭제 실패 (로컬에서만 삭제):', err);
-    }
-    setPosts(posts.filter(p => p.id !== id));
-    if (selectedPost?.id === id) {
-      setSelectedPost(null);
-    }
-    alert('게시글이 삭제되었습니다.');
-  };
-
-  // 관리자 삭제 기능: 새가족 카드 삭제
-  const handleDeleteNewcomer = async (id: string) => {
-    if (!window.confirm('이 새가족 카드를 삭제하시겠습니까?')) return;
-    try {
-      await deleteDoc(doc(db, 'newcomers', id));
-    } catch (err) {
-      console.warn('Firestore 삭제 실패:', err);
-    }
-    setNewcomers(newcomers.filter(n => n.id !== id));
-    alert('새가족 카드가 삭제되었습니다.');
-  };
-
-  // 관리자 삭제 기능: 갤러리 사진 삭제
-  const handleDeleteGallery = async (id: string) => {
-    if (!window.confirm('이 갤러리 사진을 삭제하시겠습니까?')) return;
-    try {
-      await deleteDoc(doc(db, 'gallery', id));
-    } catch (err) {
-      console.warn('Firestore 삭제 실패:', err);
-    }
-    setGallery(gallery.filter(g => g.id !== id));
-    alert('갤러리 사진이 삭제되었습니다.');
-  };
-
   const handleCopyAccount = () => {
     navigator.clipboard.writeText('131020284906');
     setCopiedAccount(true);
@@ -451,7 +298,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
     <div className="bg-[#F9FAFB] min-h-screen py-8 sm:py-12 border-b border-slate-200">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
         
-        {/* 상단 컨트롤 바 */}
+        {/* 상단 홈 복귀 바 (지저분한 관리자 모드 버튼 완전 제거) */}
         <div className="mb-6 flex items-center justify-between">
           <button
             onClick={onGoHome}
@@ -459,18 +306,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
           >
             <ArrowLeft className="w-4 h-4" />
             <span>메인 홈으로 돌아가기</span>
-          </button>
-
-          <button
-            onClick={() => setIsAdminOpen(true)}
-            className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border shadow-2xs cursor-pointer transition-colors ${
-              isAdminAuthenticated 
-                ? 'bg-amber-50 text-[#A27B2B] border-amber-300' 
-                : 'bg-white text-slate-500 hover:text-slate-900 border-slate-200'
-            }`}
-          >
-            <Lock className="w-3.5 h-3.5 text-[#C49A45]" />
-            <span>{isAdminAuthenticated ? '관리자 인증됨' : '관리자 모드'}</span>
           </button>
         </div>
 
@@ -595,23 +430,12 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 3. 시온성 갤러리 (사진 그리드 + 삭제 지원) */}
+            {/* 3. 시온성 갤러리 */}
             {currentSubMenuId === 'church-gallery' && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-1">시온성 갤러리</h1>
-                    <p className="text-xs sm:text-sm text-slate-500">시온성교회의 은혜로운 사역 현장과 추억을 담은 사진첩입니다.</p>
-                  </div>
-                  {isAdminAuthenticated && (
-                    <button
-                      onClick={() => setIsAdminOpen(true)}
-                      className="px-3.5 py-1.5 rounded-lg bg-[#C49A45] text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>사진 등록</span>
-                    </button>
-                  )}
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-1">시온성 갤러리</h1>
+                  <p className="text-xs sm:text-sm text-slate-500">시온성교회의 은혜로운 사역 현장과 추억을 담은 사진첩입니다.</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-2">
@@ -620,15 +444,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                       <div>
                         <div className="aspect-[4/3] bg-slate-100 overflow-hidden relative">
                           <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                          {isAdminAuthenticated && (
-                            <button
-                              onClick={() => handleDeleteGallery(item.id)}
-                              className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-rose-600 text-white transition-colors cursor-pointer"
-                              title="사진 삭제"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
                         </div>
                         <div className="p-4 space-y-1.5">
                           <span className="text-[11px] text-slate-400 font-mono block">{item.date}</span>
@@ -724,7 +539,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 6. 새가족 소개 (삭제 버튼 지원) */}
+            {/* 6. 새가족 소개 */}
             {currentSubMenuId === 'newcomers-intro' && (
               <div className="space-y-6">
                 <div>
@@ -737,18 +552,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                     <div key={nc.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2 shadow-2xs hover:shadow-xs transition-shadow relative">
                       <div className="flex items-center justify-between text-xs text-slate-400">
                         <span className="font-bold text-[#A27B2B]">새가족 등록</span>
-                        <div className="flex items-center gap-2">
-                          <span>{nc.date}</span>
-                          {isAdminAuthenticated && (
-                            <button
-                              onClick={() => handleDeleteNewcomer(nc.id)}
-                              className="text-slate-400 hover:text-rose-600 p-0.5 cursor-pointer"
-                              title="삭제"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
+                        <span>{nc.date}</span>
                       </div>
                       <h3 className="font-extrabold text-lg text-slate-900">{nc.name}</h3>
                       <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{nc.desc}</p>
@@ -758,10 +562,11 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 7. 2026 비전 및 표어 */}
+            {/* 7. 2026 비전 및 표어 (요청하신 줄바꿈 정돈 반영) */}
             {currentSubMenuId === 'vision-slogan' && (
               <div className="space-y-6">
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">2026 비전 및 표어</h1>
+                
                 <div className="p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 text-center space-y-3">
                   <span className="text-xs font-bold text-[#A27B2B] tracking-widest uppercase">2026 CHURCH SLOGAN</span>
                   <h2 className="text-2xl sm:text-4xl font-black text-slate-900 leading-tight">
@@ -771,7 +576,17 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                     "무슨 일을 하든지 마음을 다하여 주께 하듯 하고 사람에게 하듯 하지 말라" (골로새서 3:23)
                   </p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+
+                <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs sm:text-sm text-slate-700 leading-relaxed space-y-1">
+                  <p className="font-medium">
+                    대한예수교장로회(합동) 하남 시온성교회는 오직 기록된 말씀 위에 서서,
+                  </p>
+                  <p>
+                    날마다 십자가의 복음으로 영혼이 살아나고 주께 하듯 기쁨으로 함께 걷는 믿음의 공동체입니다.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                   <div className="p-5 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
                     <h3 className="font-bold text-slate-900">01. 복음의 본질</h3>
                     <p className="text-xs text-slate-600 leading-relaxed">내 의와 공로가 아닌 오직 십자가 예수 그리스도의 구속 은혜를 붙듭니다.</p>
@@ -917,7 +732,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 12. 일반 게시판 글 상세보기 (+ 관리자 삭제 버튼) */}
+            {/* 12. 일반 게시판 글 상세보기 */}
             {selectedPost && (
               <div className="space-y-6">
                 <div className="pb-4 border-b border-slate-200 flex items-start justify-between">
@@ -942,16 +757,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                       )}
                     </div>
                   </div>
-
-                  {isAdminAuthenticated && (
-                    <button
-                      onClick={() => handleDeletePost(selectedPost.id)}
-                      className="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>게시글 삭제</span>
-                    </button>
-                  )}
                 </div>
 
                 {selectedPost.youtubeId && (
@@ -981,7 +786,7 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
               </div>
             )}
 
-            {/* 13. 일반 게시판 목록 화면 (+ 관리자 빠른 삭제 지원) */}
+            {/* 13. 일반 게시판 목록 화면 */}
             {!selectedPost && [
               'sunday-sermon', 'wednesday-sermon', 'friday-sermon', 'evening-prayer',
               'cell-couple', 'cell-young', 'ministry-team', 'mission-local'
@@ -991,15 +796,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                     {currentSubMenu.name}
                   </h1>
-                  {isAdminAuthenticated && (
-                    <button
-                      onClick={() => setIsAdminOpen(true)}
-                      className="px-3.5 py-1.5 rounded-lg bg-[#C49A45] text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>글 작성</span>
-                    </button>
-                  )}
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pb-4 border-b border-slate-200">
@@ -1024,14 +820,13 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                         <th className="py-3 px-3 text-center w-24">작성자</th>
                         <th className="py-3 px-3 text-center w-24">날짜</th>
                         <th className="py-3 px-3 text-center w-16 hidden sm:table-cell">조회</th>
-                        {isAdminAuthenticated && <th className="py-3 px-3 text-center w-16">관리</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredList.length === 0 ? (
                         <tr>
-                          <td colSpan={isAdminAuthenticated ? 6 : 5} className="py-12 text-center text-slate-400 text-xs">
-                            등록된 게시글이 없습니다. 우측 상단 글 작성 버튼으로 등록해 주세요.
+                          <td colSpan={5} className="py-12 text-center text-slate-400 text-xs">
+                            등록된 게시글이 없습니다.
                           </td>
                         </tr>
                       ) : (
@@ -1048,17 +843,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
                             <td className="py-3.5 px-3 text-center text-slate-500">{post.author}</td>
                             <td className="py-3.5 px-3 text-center text-slate-400 font-mono text-xs">{post.date}</td>
                             <td className="py-3.5 px-3 text-center text-slate-400 font-mono text-xs hidden sm:table-cell">{post.views}</td>
-                            {isAdminAuthenticated && (
-                              <td className="py-3.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
-                                <button
-                                  onClick={(e) => handleDeletePost(post.id, e)}
-                                  className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                  title="삭제"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </td>
-                            )}
                           </tr>
                         ))
                       )}
@@ -1069,214 +853,6 @@ export const SubPageLayout: React.FC<SubPageLayoutProps> = ({
             )}
           </main>
         </div>
-
-        {/* ========================================================= */}
-        {/* 관리자 글/사진 등록 모달                                   */}
-        {/* ========================================================= */}
-        {isAdminOpen && (
-          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-              <div className="flex items-center justify-between border-b pb-3">
-                <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-1.5">
-                  <Lock className="w-4 h-4 text-[#C49A45]" />
-                  <span>관리자 등록 모드 (DB 연동)</span>
-                </h3>
-                <button onClick={() => setIsAdminOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer text-sm font-bold">닫기</button>
-              </div>
-
-              {!isAdminAuthenticated ? (
-                <div className="space-y-3 py-4">
-                  <p className="text-xs text-slate-600">관리자 비밀번호를 입력해주세요.</p>
-                  <input
-                    type="password"
-                    placeholder="비밀번호 입력"
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleAdminAuth();
-                    }}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm"
-                  />
-                  <button
-                    onClick={handleAdminAuth}
-                    className="w-full py-2.5 rounded-xl bg-[#111827] text-white font-bold text-xs cursor-pointer hover:bg-slate-800"
-                  >
-                    로그인 확인
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleAdminSubmit} className="space-y-3 max-h-[75vh] overflow-y-auto pr-1">
-                  {/* A. 갤러리 폼 */}
-                  {currentSubMenuId === 'church-gallery' ? (
-                    <>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">앨범 / 행사 제목</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="예: 2026 전교인 가을 야외 수련회"
-                          value={newGalleryTitle}
-                          onChange={(e) => setNewGalleryTitle(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">사진 이미지 URL</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="https://images.unsplash.com/..."
-                          value={newGalleryImage}
-                          onChange={(e) => setNewGalleryImage(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">설명 (선택)</label>
-                        <textarea
-                          rows={3}
-                          placeholder="사진에 대한 설명을 간단히 입력해 주세요."
-                          value={newGalleryDesc}
-                          onChange={(e) => setNewGalleryDesc(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm resize-none"
-                        />
-                      </div>
-                    </>
-                  ) : currentSubMenuId === 'newcomers-intro' ? (
-                    /* B. 새가족 폼 */
-                    <>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">새가족 성함 / 가정명</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="예: 홍길동 성도 가정"
-                          value={newNewcomerName}
-                          onChange={(e) => setNewNewcomerName(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">설명 및 목장 배정</label>
-                        <input
-                          type="text"
-                          placeholder="예: 2목장 배정 | 주님의 이름으로 축복합니다."
-                          value={newNewcomerDesc}
-                          onChange={(e) => setNewNewcomerDesc(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    /* C. 일반 게시판 / 설교 폼 */
-                    <>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">등록할 카테고리</label>
-                        <select
-                          value={adminTargetCategory}
-                          onChange={(e) => setAdminTargetCategory(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
-                        >
-                          <option value="sunday">주일예배</option>
-                          <option value="wednesday">수요행복예배</option>
-                          <option value="friday">금요기도회</option>
-                          <option value="tue-thu">화·목 저녁기도회</option>
-                          <option value="cell-couple">부부·가정 목장</option>
-                          <option value="cell-young">청년·직장 목장</option>
-                          <option value="ministry">사역부서 안내</option>
-                          <option value="mission">선교 및 지역 구제</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">제목</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="제목을 입력하세요"
-                          value={newTitle}
-                          onChange={(e) => setNewTitle(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">작성자</label>
-                          <input
-                            type="text"
-                            value={newAuthor}
-                            onChange={(e) => setNewAuthor(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">성경 본문 (선택)</label>
-                          <input
-                            type="text"
-                            placeholder="예: 창세기 35:1~3"
-                            value={newScripture}
-                            onChange={(e) => setNewScripture(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">유튜브 영상 ID (선택 - 주일/수요/금요)</label>
-                        <input
-                          type="text"
-                          placeholder="예: 1azfrCPgb84"
-                          value={newYoutubeId}
-                          onChange={(e) => setNewYoutubeId(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">음성 파일 URL (선택 - 화목 기도회)</label>
-                        <input
-                          type="text"
-                          placeholder="https://.../audio.mp3"
-                          value={newAudioUrl}
-                          onChange={(e) => setNewAudioUrl(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">내용 / 요약문</label>
-                        <textarea
-                          required
-                          rows={4}
-                          placeholder="내용을 입력하세요."
-                          value={newContent}
-                          onChange={(e) => setNewContent(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm resize-none"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full py-2.5 rounded-xl bg-[#C49A45] hover:bg-[#A27B2B] text-white font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>데이터베이스 저장 중...</span>
-                      </>
-                    ) : (
-                      <span>등록 완료하기 (DB 영구 저장)</span>
-                    )}
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        )}
 
       </div>
     </div>
