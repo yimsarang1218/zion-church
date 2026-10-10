@@ -1,9 +1,13 @@
 import React from 'react';
-import { Eye } from 'lucide-react';
+import { Eye, Lock } from 'lucide-react';
 import { CHURCH_INFO } from '../data/churchData';
 import { useVisitorStats } from '../hooks/useVisitorStats';
 
-export const PortalFooter: React.FC = () => {
+interface PortalFooterProps {
+  onOpenAdmin?: () => void;
+}
+
+export const PortalFooter: React.FC<PortalFooterProps> = ({ onOpenAdmin }) => {
   const { today, total, loading } = useVisitorStats();
 
   return (
@@ -21,7 +25,7 @@ export const PortalFooter: React.FC = () => {
           </ul>
 
           {/* 방문자 수 뱃지 */}
-          <div className="inline-flex items-center justify-center gap-2 self-center sm:self-auto bg-slate-800/80 px-3.5 py-1.5 rounded-full border border-slate-700/60 text-xs text-slate-300">
+          <div className="inline-flex items-center justify-center gap-2 self-center sm:self-auto bg-slate-800/80 px-3.5 py-1.5 rounded-full border border-slate-700/80 text-xs text-slate-300">
             <Eye className="w-3.5 h-3.5 text-[#C49A45]" />
             <span>오늘 방문자: <strong className="text-amber-400 font-mono">{loading ? '...' : today.toLocaleString()}</strong></span>
             <span className="text-slate-600">|</span>
@@ -35,19 +39,30 @@ export const PortalFooter: React.FC = () => {
             {CHURCH_INFO.denomination} {CHURCH_INFO.name} ({CHURCH_INFO.englishName})
           </p>
           <p>
-            주소: {CHURCH_INFO.address} {CHURCH_INFO.addressDetail} ({CHURCH_INFO.trafficInfo}) | 상담: <a href="tel:010-2741-2938" className="hover:text-white font-bold text-slate-200">010-2741-2938</a> | 교회: 02-408-1191 | 팩스: {CHURCH_INFO.fax}
+            주소: {CHURCH_INFO.address} {CHURCH_INFO.addressDetail} ({CHURCH_INFO.trafficInfo}) | 상담: <a href="tel:010-2741-2938" className="hover:text-white font-bold text-slate-200">010-2741-2938</a>
           </p>
           <p>
-            카카오톡 ID: <strong className="text-amber-300">limsarang1218</strong> | 이메일: <a href={`mailto:${CHURCH_INFO.email}`} className="text-slate-300 hover:underline">{CHURCH_INFO.email}</a> | 헌금계좌: 농협 131-020-284906 (시온성교회)
+            카카오톡 ID: <strong className="text-amber-300">yimsarang1218</strong> | 이메일: <a href={`mailto:${CHURCH_INFO.email}`} className="text-slate-300 hover:underline">{CHURCH_INFO.email}</a>
           </p>
           <p>
-            셔틀차량 문의: <a href="tel:010-4707-5395" className="text-slate-200 font-bold hover:underline">010-4707-5395</a>
+            셔틀차량 문의: <a href="tel:010-4787-5395" className="text-slate-200 font-bold hover:underline">010-4787-5395</a>
           </p>
         </div>
 
-        {/* Copyright */}
-        <div className="mt-6 pt-4 text-slate-500 text-[11px]">
-          Copyright © 2026 하남시온성교회. All Rights Reserved.
+        {/* Copyright & 은밀한 관리자 진입 버튼 */}
+        <div className="mt-6 pt-4 text-slate-500 text-[11px] flex items-center justify-center sm:justify-between">
+          <p>Copyright © 2026 하남시온성교회. All Rights Reserved.</p>
+          
+          {onOpenAdmin && (
+            <button
+              onClick={onOpenAdmin}
+              className="inline-flex items-center gap-1 text-slate-500 hover:text-amber-400 transition-colors cursor-pointer py-1 px-2 rounded-md hover:bg-slate-800"
+              title="관리자 대시보드"
+            >
+              <Lock className="w-3 h-3" />
+              <span>관리자</span>
+            </button>
+          )}
         </div>
       </div>
     </footer>
