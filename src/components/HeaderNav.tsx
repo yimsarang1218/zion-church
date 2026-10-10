@@ -1,157 +1,84 @@
-import React from 'react';
-import { Menu, PlayCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Menu, PlayCircle, BookOpen, Heart } from 'lucide-react';
 import { CHURCH_INFO } from '../data/churchData';
-import { ZionLogo } from './ZionLogo';
 
 interface HeaderNavProps {
-  onToggleMegaMenu: () => void;
-  onOpenPrayer?: () => void;
-  onGoHome?: () => void;
-  onNavigateSection?: (sectionId: string) => void;
+  onOpenMegaMenu: () => void;
+  onGoHome: () => void;
+  onNavigateSection?: (sectionId: string, subMenuId?: string) => void;
+  onNavigateSubPage?: (sectionId: string, subMenuId?: string) => void;
 }
 
-export const HeaderNav: React.FC<HeaderNavProps> = ({ 
-  onToggleMegaMenu,
+export const HeaderNav: React.FC<HeaderNavProps> = ({
+  onOpenMegaMenu,
   onGoHome,
   onNavigateSection,
+  onNavigateSubPage,
 }) => {
+  const navigate = onNavigateSection || onNavigateSubPage;
+
+  const menuItems = [
+    { id: 'worship', label: '01 예배와 말씀', defaultSub: 'sunday-sermon' },
+    { id: 'qt', label: '02 날마다 큐티', defaultSub: 'qtin-guide' },
+    { id: 'community', label: '03 공동체와 양육', defaultSub: 'sarangbang' },
+    { id: 'ministry', label: '04 사역과 선교', defaultSub: 'ministry-intro' },
+    { id: 'newfamily', label: '05 새가족 안내', defaultSub: 'welcome-greeting' },
+    { id: 'about', label: '06 교회소개', defaultSub: 'vision-slogan' },
+  ];
+
   return (
-    <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] z-40 transition-all duration-200">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-[72px] sm:h-[78px] flex items-center justify-between">
-        {/* 교회 로고 */}
-        <a 
-          href="#" 
-          onClick={(e) => {
-            if (onGoHome) {
-              e.preventDefault();
-              onGoHome();
-            }
-          }}
-          className="flex items-center gap-2.5 no-underline group cursor-pointer"
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
+        {/* 로고 영역 */}
+        <button 
+          onClick={onGoHome} 
+          className="flex items-center gap-3 text-left cursor-pointer group"
         >
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center p-0.5 shadow-2xs group-hover:border-amber-200 transition-colors">
-            <ZionLogo size={36} />
+          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center font-black text-lg text-[#C49A45] shadow-xs">
+            시온
           </div>
-          <div className="flex flex-col">
-            <span className="text-lg sm:text-2xl font-extrabold text-[#1F2937] tracking-tight leading-tight">
+          <div>
+            <span className="block text-base sm:text-lg font-black text-slate-900 tracking-tight group-hover:text-[#C49A45] transition-colors">
               하남 시온성교회
             </span>
-            <span className="text-[9px] sm:text-[10px] text-slate-500 font-semibold tracking-wider">
-              {CHURCH_INFO.englishName}
+            <span className="block text-[10px] text-slate-400 font-mono tracking-wider">
+              ZION PRESBYTERIAN CHURCH
             </span>
           </div>
-        </a>
+        </button>
 
-        {/* PC 전용 6대 메뉴 (01 ~ 06) */}
-        <nav className="hidden lg:flex items-center h-full">
-          <ul className="flex list-none h-full gap-1">
-            <li className="flex items-center px-3 h-full cursor-pointer">
-              <a 
-                href="#worship" 
-                onClick={(e) => {
-                  if (onNavigateSection) {
-                    e.preventDefault();
-                    onNavigateSection('worship');
-                  }
-                }}
-                className="text-[0.92rem] font-bold text-[#1F2937] hover:text-[#C49A45] transition-colors py-6 whitespace-nowrap"
-              >
-                01 예배와 말씀
-              </a>
-            </li>
-            <li className="flex items-center px-3 h-full cursor-pointer">
-              <a 
-                href="#qt" 
-                onClick={(e) => {
-                  if (onNavigateSection) {
-                    e.preventDefault();
-                    onNavigateSection('qt');
-                  }
-                }}
-                className="text-[0.92rem] font-bold text-[#1F2937] hover:text-[#C49A45] transition-colors py-6 whitespace-nowrap"
-              >
-                02 날마다 큐티
-              </a>
-            </li>
-            <li className="flex items-center px-3 h-full cursor-pointer">
-              <a 
-                href="#community" 
-                onClick={(e) => {
-                  if (onNavigateSection) {
-                    e.preventDefault();
-                    onNavigateSection('community');
-                  }
-                }}
-                className="text-[0.92rem] font-bold text-[#1F2937] hover:text-[#C49A45] transition-colors py-6 whitespace-nowrap"
-              >
-                03 공동체와 양육
-              </a>
-            </li>
-            <li className="flex items-center px-3 h-full cursor-pointer">
-              <a 
-                href="#ministry" 
-                onClick={(e) => {
-                  if (onNavigateSection) {
-                    e.preventDefault();
-                    onNavigateSection('ministry');
-                  }
-                }}
-                className="text-[0.92rem] font-bold text-[#1F2937] hover:text-[#C49A45] transition-colors py-6 whitespace-nowrap"
-              >
-                04 사역과 선교
-              </a>
-            </li>
-            <li className="flex items-center px-3 h-full cursor-pointer">
-              <a 
-                href="#newcomers" 
-                onClick={(e) => {
-                  if (onNavigateSection) {
-                    e.preventDefault();
-                    onNavigateSection('newcomers');
-                  }
-                }}
-                className="text-[0.92rem] font-bold text-[#1F2937] hover:text-[#C49A45] transition-colors py-6 whitespace-nowrap"
-              >
-                05 새가족 안내
-              </a>
-            </li>
-            <li className="flex items-center px-3 h-full cursor-pointer">
-              <a 
-                href="#about" 
-                onClick={(e) => {
-                  if (onNavigateSection) {
-                    e.preventDefault();
-                    onNavigateSection('about');
-                  }
-                }}
-                className="text-[0.92rem] font-bold text-[#1F2937] hover:text-[#C49A45] transition-colors py-6 whitespace-nowrap"
-              >
-                06 교회소개
-              </a>
-            </li>
-          </ul>
+        {/* 데스크톱 상단 메뉴 바 */}
+        <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => navigate && navigate(item.id, item.defaultSub)}
+              className="px-3 py-2 rounded-lg text-xs font-extrabold text-slate-700 hover:text-[#C49A45] hover:bg-slate-50 transition-all cursor-pointer"
+            >
+              {item.label}
+            </button>
+          ))}
         </nav>
 
-        {/* 우측 빨간색 온라인 예배 버튼 & 전체메뉴(≡) 버튼 */}
+        {/* 우측 액션: 온라인 예배 & 3단 메뉴(햄버거 버튼) */}
         <div className="flex items-center gap-2 sm:gap-3">
           <a
-            href="https://youtu.be/1azfrCPgb84"
+            href="https://www.youtube.com/@zionchurch"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#E11D48] hover:bg-[#BE123C] text-white text-xs font-bold transition-all shadow-md cursor-pointer whitespace-nowrap"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs"
           >
-            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            <PlayCircle className="w-3.5 h-3.5" />
             <span>온라인 예배</span>
           </a>
 
-          {/* 햄버거 토글 메뉴 */}
+          {/* 3단 햄버거 전체 메뉴 버튼 */}
           <button
-            onClick={onToggleMegaMenu}
-            className="p-2 text-[#1F2937] hover:text-[#C49A45] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-            aria-label="전체메뉴 열기"
-            title="전체메뉴"
+            onClick={onOpenMegaMenu}
+            className="p-2 sm:p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
+            aria-label="전체 메뉴 열기"
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
       </div>
