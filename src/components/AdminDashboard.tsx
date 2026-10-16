@@ -74,11 +74,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     return (match && match[2].length === 11) ? match[2] : cleanUrl;
   };
 
-  // Firebase Storage 파일 업로드 (용량 무제한)
-  const uploadFileToStorage = async (file: File, folderPath: string): Promise<string> => {
-    const fileRef = ref(storage, `${folderPath}/${Date.now()}_${file.name}`);
-    await uploadBytes(fileRef, file);
-    return await getDownloadURL(fileRef);
+  // 브라우저 자동 압축 후 즉시 저장 (Storage 권한 에러 및 멈춤 완전 해결)
+  const uploadFileToStorage = (file: File, _folderPath?: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1200;
+          if (width > height && width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return resolve(e.target?.result as string);
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.75));
+        };
+        img.onerror = () => resolve(e.target?.result as string);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   useEffect(() => {
