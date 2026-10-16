@@ -173,7 +173,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     }
   };
 
-  // 주보 업로드 -> Storage에 저장 후 메인 주보 팝업 갱신 + 교회 자료실 자동 누적
+// 주보 업로드 -> Storage 우회 브라우저 직접 압축 및 교회 자료실 자동 누적
   const handleUploadBulletin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bulletinDate.trim() || bulletinFiles.length === 0) {
@@ -183,21 +183,58 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
 
     setIsUploading(true);
     try {
+      // 1) 브라우저 캔버스를 이용해 고화질 압축(용량 대폭 축소) 변환
+      const compressImage = (file: File): Promise<string> => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let width = img.width;
+              let height = img.height;
+              const maxDim = 1200;
+              if (width > height && width > maxDim) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else if (height > maxDim) {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.75));
+              } else {
+                resolve(ev.target?.result as string);
+              }
+            };
+            img.onerror = () => resolve(ev.target?.result as string);
+            img.src = ev.target?.result as string;
+          };
+          reader.onerror = () => resolve('');
+          reader.readAsDataURL(file);
+        });
+      };
+
       const imageUrls: string[] = [];
       for (const file of bulletinFiles) {
-        const url = await uploadFileToStorage(file, 'bulletins');
-        imageUrls.push(url);
+        const url = await compressImage(file);
+        if (url) imageUrls.push(url);
       }
 
       const title = bulletinTitle.trim() || `${bulletinDate.trim()} 주보`;
 
-      // 1) 최신 주보 설정 (메인의 [금주의 주보 보기] 버튼과 즉시 연동)
+      // 2) 최신 주보 설정 (메인의 [금주의 주보 보기] 버튼과 즉시 연동)
       await setDoc(doc(db, 'site_settings', 'main_config'), {
         bulletinDate: title,
         bulletinImages: imageUrls,
+        updatedAt: new Date().toISOString()
       }, { merge: true });
 
-      // 2) '교회 자료실' 컬렉션에 자동 누적 (이전 주보가 계속 쌓임)
+      // 3) '교회 자료실' 컬렉션에 자동 누적 (이전 주보가 계속 쌓임)
       const resourceData = {
         title: `[주보] ${title}`,
         category: '교회주보',
@@ -208,16 +245,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
         createdAt: new Date().toISOString()
       };
       const docRef = await addDoc(collection(db, 'resources'), resourceData);
-      setResources([{ id: docRef.id, ...resourceData }, ...resources]);
+      setResources((prev) => [{ id: docRef.id, ...resourceData }, ...prev]);
 
       setBulletinDate('');
       setBulletinTitle('');
       setBulletinFiles([]);
       alert('주보가 성공적으로 등록되었습니다!\n(최신 주보로 반영되었으며, 교회 자료실에도 자동 누적 보관되었습니다)');
-    } catch (err) {
-      alert('주보 업로드 오류: ' + err);
+    } catch (err: any) {
+      console.error(err);
+      alert('주보 업로드 오류: ' + (err?.message || err));
     } finally {
-      setIsUploading(false);
+      setIsUploading(false); // 무한 대기 강제 방지
     }
   };
 
